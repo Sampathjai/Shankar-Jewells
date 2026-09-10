@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchApi } from '../../../api/client';
+import { CustomerPhotoPreview } from '../../../components/common/CustomerPhotoPreview';
+import { formatCurrency } from '../../../utils/formatters';
 import {
   FileSpreadsheet,
   Printer,
@@ -15,10 +17,12 @@ interface Customer {
   businessName: string;
   contactPerson?: string;
   mobile: string;
+  gstRegistered?: boolean;
   gstin?: string;
   creditLimit: number;
   outstandingBalance: number;
   paymentTerms: string;
+  photoUrl?: string;
 }
 
 interface LedgerEntry {
@@ -37,6 +41,15 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
   const [ledgers, setLedgers] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Photo Lightbox State
+  const [previewPhotoModal, setPreviewPhotoModal] = useState<{
+    isOpen: boolean;
+    photoUrl?: string;
+    businessName?: string;
+    contactPerson?: string;
+    mobile?: string;
+  }>({ isOpen: false });
 
   useEffect(() => {
     async function loadLedger() {
@@ -98,7 +111,9 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
               <p className="text-[10px] text-luxury-gray uppercase tracking-widest font-semibold mt-0.5">
                 WHOLESALE CUSTOMER LEDGER STATEMENT • TRICHY
               </p>
-              <p className="text-[11px] text-luxury-gray mt-1">124 Netaji Bypass Road, Trichy - 620002 | Phone: +91 98424 12345</p>
+              <p className="text-[11px] text-luxury-gray mt-1">
+                No. 4, Sandhukadai, Big Bazzar Street, Trichy - 620008 | Phone: +91 944394912
+              </p>
             </div>
             <div className="text-right space-y-1">
               <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-luxury-gold bg-luxury-gold/10 px-2.5 py-1 rounded border border-luxury-gold/20">
@@ -109,18 +124,44 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
           </div>
 
           {/* Account Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-luxury-ivory/60 p-4 rounded-xl border border-luxury-border">
-            <div>
-              <span className="text-[10px] uppercase font-bold text-luxury-gray">Account Name</span>
-              <div className="font-bold text-sm text-luxury-charcoal mt-0.5">{customer.businessName}</div>
-              <div className="text-[11px] text-luxury-gray">Contact: {customer.contactPerson || 'N/A'} ({customer.mobile})</div>
-              <div className="text-[11px] text-luxury-gray">GSTIN: {customer.gstin || 'Unregistered'}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-luxury-ivory/60 p-4 rounded-xl border border-luxury-border items-center">
+            <div className="flex items-center gap-3">
+              {customer.photoUrl ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPreviewPhotoModal({
+                      isOpen: true,
+                      photoUrl: customer.photoUrl,
+                      businessName: customer.businessName,
+                      contactPerson: customer.contactPerson,
+                      mobile: customer.mobile,
+                    })
+                  }
+                  className="w-12 h-12 rounded-full border border-luxury-border overflow-hidden shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Click to preview customer photo"
+                >
+                  <img src={customer.photoUrl} alt="" className="w-full h-full object-cover" />
+                </button>
+              ) : null}
+              <div>
+                <span className="text-[10px] uppercase font-bold text-luxury-gray">Account Name</span>
+                <div className="font-bold text-sm text-luxury-charcoal mt-0.5">{customer.businessName}</div>
+                <div className="text-[11px] text-luxury-gray">Contact: {customer.contactPerson || 'N/A'} ({customer.mobile})</div>
+                <div className="text-[11px]">
+                  GST Status: {customer.gstRegistered || customer.gstin ? (
+                    <span className="font-bold font-mono text-emerald-700">{customer.gstin || 'Registered'}</span>
+                  ) : (
+                    <span className="text-slate-500 font-medium">Not Registered</span>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div>
               <span className="text-[10px] uppercase font-bold text-luxury-gray">Approved Credit Line</span>
               <div className="font-mono font-bold text-sm text-luxury-charcoal mt-0.5">
-                ₹{customer.creditLimit.toLocaleString('en-IN')}
+                {formatCurrency(customer.creditLimit)}
               </div>
               <div className="text-[11px] text-luxury-gray">Terms: {customer.paymentTerms}</div>
             </div>
@@ -128,7 +169,7 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
             <div className="text-right">
               <span className="text-[10px] uppercase font-bold text-luxury-gray">Closing Net Balance Dues</span>
               <div className="font-serif text-lg font-bold text-amber-700 mt-0.5">
-                ₹{customer.outstandingBalance.toLocaleString('en-IN')}
+                {formatCurrency(customer.outstandingBalance)}
               </div>
               <div className="text-[10px] font-bold text-emerald-700">Account Active</div>
             </div>
@@ -148,7 +189,7 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
                   <th className="py-2.5 px-3 text-center">Type</th>
                   <th className="py-2.5 px-3 text-right">Debit (Invoice +)</th>
                   <th className="py-2.5 px-3 text-right">Credit (Payment -)</th>
-                  <th className="py-2.5 px-3 text-right">Running Balance (₹)</th>
+                  <th className="py-2.5 px-3 text-right">Running Balance</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-luxury-border/60">
@@ -179,13 +220,13 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono font-semibold text-amber-700">
-                        {l.debit > 0 ? `₹${l.debit.toLocaleString('en-IN')}` : '-'}
+                        {l.debit > 0 ? formatCurrency(l.debit) : '-'}
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono font-semibold text-emerald-700">
-                        {l.credit > 0 ? `₹${l.credit.toLocaleString('en-IN')}` : '-'}
+                        {l.credit > 0 ? formatCurrency(l.credit) : '-'}
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono font-bold text-luxury-charcoal text-sm">
-                        ₹{l.balance.toLocaleString('en-IN')}
+                        {formatCurrency(l.balance)}
                       </td>
                     </tr>
                   ))
@@ -205,6 +246,16 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
           </div>
         </div>
       ) : null}
+
+      {/* Photo Lightbox */}
+      <CustomerPhotoPreview
+        isOpen={previewPhotoModal.isOpen}
+        onClose={() => setPreviewPhotoModal({ ...previewPhotoModal, isOpen: false })}
+        photoUrl={previewPhotoModal.photoUrl}
+        businessName={previewPhotoModal.businessName}
+        contactPerson={previewPhotoModal.contactPerson}
+        mobile={previewPhotoModal.mobile}
+      />
     </div>
   );
 };

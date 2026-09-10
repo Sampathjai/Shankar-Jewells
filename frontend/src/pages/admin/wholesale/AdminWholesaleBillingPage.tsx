@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../../api/client';
 import { Product } from '../../../types';
 import { useToast } from '../../../components/common/Toast';
+import { CustomerPhotoPreview } from '../../../components/common/CustomerPhotoPreview';
+import { formatCurrency } from '../../../utils/formatters';
 import {
   Building2,
   Plus,
@@ -25,11 +27,13 @@ interface WholesaleCustomer {
   businessName: string;
   contactPerson?: string;
   mobile: string;
+  gstRegistered?: boolean;
   gstin?: string;
   creditLimit: number;
   outstandingBalance: number;
   paymentTerms: string;
   dueDays: number;
+  photoUrl?: string;
 }
 
 interface BillItem {
@@ -54,6 +58,8 @@ export const AdminWholesaleBillingPage: React.FC = () => {
 
   const [billItems, setBillItems] = useState<BillItem[]>([]);
   const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [gstEnabled, setGstEnabled] = useState<boolean>(false);
+  const [gstRate, setGstRate] = useState<number>(3.0);
   const [immediatePayment, setImmediatePayment] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState('BANK_TRANSFER');
   const [referenceNo, setReferenceNo] = useState('');
@@ -62,6 +68,15 @@ export const AdminWholesaleBillingPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [createdInvoice, setCreatedInvoice] = useState<any | null>(null);
+
+  // Photo Lightbox State
+  const [previewPhotoModal, setPreviewPhotoModal] = useState<{
+    isOpen: boolean;
+    photoUrl?: string;
+    businessName?: string;
+    contactPerson?: string;
+    mobile?: string;
+  }>({ isOpen: false });
 
   // Credit Limit Override Modal
   const [showOverrideModal, setShowOverrideModal] = useState(false);
@@ -89,8 +104,12 @@ export const AdminWholesaleBillingPage: React.FC = () => {
     if (selectedCustomerId) {
       const found = customers.find((c) => c.id === selectedCustomerId) || null;
       setSelectedCustomer(found);
+      if (found) {
+        setGstEnabled(!!(found.gstRegistered || found.gstin));
+      }
     } else {
       setSelectedCustomer(null);
+      setGstEnabled(false);
     }
   }, [selectedCustomerId, customers]);
 
@@ -134,7 +153,7 @@ export const AdminWholesaleBillingPage: React.FC = () => {
 
   const rawSubtotal = billItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
   const taxableTotal = Math.max(0, rawSubtotal - discountAmount);
-  const gstTax = taxableTotal * 0.03; // 3% GST
+  const gstTax = gstEnabled ? taxableTotal * (gstRate / 100) : 0;
   const grandTotal = taxableTotal + gstTax;
   const netCreditRequired = Math.max(0, grandTotal - immediatePayment);
 
@@ -169,6 +188,9 @@ export const AdminWholesaleBillingPage: React.FC = () => {
 
       const payload = {
         customerId: selectedCustomer.id,
+        discount: discountAmount,
+        gstEnabled,
+        gstRate,
         immediatePayment,
         paymentMethod,
         referenceNo,
@@ -264,10 +286,10 @@ export const AdminWholesaleBillingPage: React.FC = () => {
           <div className="flex justify-between items-start border-b border-luxury-border pb-6">
             <div>
               <h1 className="font-serif text-2xl font-bold tracking-wider text-luxury-charcoal">SHANKER JEWELLS</h1>
-              <p className="text-[11px] text-luxury-gray">124 Netaji Bypass Road, Trichy - 620002</p>
-              <p className="text-[11px] text-luxury-gray">Phone: +91 98424 12345 | GSTIN: 33AAAAA0000A1Z5</p>
+              <p className="text-[11px] text-luxury-gray">No. 4, Sandhukadai, Big Bazzar Street, Trichy - 620008</p>
+              <p className="text-[11px] text-luxury-gray">Phone: +91 944394912</p>
               <span className="inline-block mt-2 text-[10px] font-bold uppercase tracking-widest text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                Wholesale B2B Credit Invoice
+                Wholesale B2B Billing Invoice
               </span>
             </div>
             <div className="text-right space-y-1">
@@ -278,18 +300,45 @@ export const AdminWholesaleBillingPage: React.FC = () => {
           </div>
 
           {/* Customer & Credit Details */}
-          <div className="grid grid-cols-2 gap-6 bg-luxury-ivory/60 p-4 rounded-xl border border-luxury-border">
-            <div>
-              <span className="text-[10px] uppercase font-bold text-luxury-gray tracking-wider">Billed To (Retailer)</span>
-              <div className="font-bold text-sm text-luxury-charcoal mt-1">{createdInvoice.customer?.businessName}</div>
-              <div>Contact: {createdInvoice.customer?.contactPerson || 'N/A'} ({createdInvoice.customer?.mobile})</div>
-              <div>GSTIN: {createdInvoice.customer?.gstin || 'Unregistered B2B'}</div>
+          <div className="grid grid-cols-2 gap-6 bg-luxury-ivory/60 p-4 rounded-xl border border-luxury-border items-center">
+            <div className="flex items-center gap-3">
+              {createdInvoice.customer?.photoUrl && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPreviewPhotoModal({
+                      isOpen: true,
+                      photoUrl: createdInvoice.customer?.photoUrl,
+                      businessName: createdInvoice.customer?.businessName,
+                      contactPerson: createdInvoice.customer?.contactPerson,
+                      mobile: createdInvoice.customer?.mobile,
+                    })
+                  }
+                  className="w-12 h-12 rounded-full border border-luxury-border overflow-hidden shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Click to view full photo lightbox"
+                >
+                  <img src={createdInvoice.customer.photoUrl} alt="" className="w-full h-full object-cover" />
+                </button>
+              )}
+              <div>
+                <span className="text-[10px] uppercase font-bold text-luxury-gray tracking-wider">Billed To (Retailer)</span>
+                <div className="font-bold text-sm text-luxury-charcoal mt-0.5">{createdInvoice.customer?.businessName}</div>
+                <div>Contact: {createdInvoice.customer?.contactPerson || 'N/A'} ({createdInvoice.customer?.mobile})</div>
+                <div>
+                  GST Status: {createdInvoice.customer?.gstRegistered || createdInvoice.customer?.gstin ? (
+                    <span className="font-bold font-mono text-emerald-700">{createdInvoice.customer?.gstin || 'Registered'}</span>
+                  ) : (
+                    <span className="text-slate-500 font-medium">Not Registered</span>
+                  )}
+                </div>
+              </div>
             </div>
+
             <div className="text-right space-y-1">
               <span className="text-[10px] uppercase font-bold text-luxury-gray tracking-wider">Credit Account Summary</span>
               <div>Payment Terms: <span className="font-bold">{createdInvoice.customer?.paymentTerms || 'NET 30'}</span></div>
-              <div>Previous Dues: ₹{(createdInvoice.customer?.outstandingBalance || 0).toLocaleString('en-IN')}</div>
-              <div>New Net Balance: <span className="font-bold text-amber-700">₹{((createdInvoice.customer?.outstandingBalance || 0) + createdInvoice.netCreditAdded).toLocaleString('en-IN')}</span></div>
+              <div>Previous Dues: {formatCurrency(createdInvoice.customer?.outstandingBalance || 0)}</div>
+              <div>New Net Balance: <span className="font-bold text-amber-700">{formatCurrency((createdInvoice.customer?.outstandingBalance || 0) + createdInvoice.netCreditAdded)}</span></div>
             </div>
           </div>
 
@@ -303,7 +352,7 @@ export const AdminWholesaleBillingPage: React.FC = () => {
                 <th className="py-2.5 px-2 text-right">Gross Wt</th>
                 <th className="py-2.5 px-2 text-right">Net Wt</th>
                 <th className="py-2.5 px-2 text-right">Unit Price</th>
-                <th className="py-2.5 px-2 text-right">Total (₹)</th>
+                <th className="py-2.5 px-2 text-right">Total Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-luxury-border/60">
@@ -317,8 +366,8 @@ export const AdminWholesaleBillingPage: React.FC = () => {
                   <td className="py-2.5 px-2 text-right font-mono">{item.quantity}</td>
                   <td className="py-2.5 px-2 text-right font-mono">{item.grossWeight || item.product?.grossWeight || 0}g</td>
                   <td className="py-2.5 px-2 text-right font-mono">{item.netWeight || item.product?.netWeight || 0}g</td>
-                  <td className="py-2.5 px-2 text-right font-mono">₹{item.unitPrice?.toLocaleString('en-IN')}</td>
-                  <td className="py-2.5 px-2 text-right font-mono font-bold">₹{(item.quantity * item.unitPrice).toLocaleString('en-IN')}</td>
+                  <td className="py-2.5 px-2 text-right font-mono">{formatCurrency(item.unitPrice)}</td>
+                  <td className="py-2.5 px-2 text-right font-mono font-bold">{formatCurrency(item.quantity * item.unitPrice)}</td>
                 </tr>
               ))}
             </tbody>
@@ -326,26 +375,43 @@ export const AdminWholesaleBillingPage: React.FC = () => {
 
           {/* Financial Totals */}
           <div className="flex justify-end pt-4 border-t border-luxury-border">
-            <div className="w-72 space-y-2 text-right text-xs">
+            <div className="w-80 space-y-2 text-right text-xs">
               <div className="flex justify-between text-luxury-gray">
                 <span>Subtotal:</span>
-                <span className="font-mono font-bold text-luxury-charcoal">₹{createdInvoice.subtotal?.toLocaleString('en-IN')}</span>
+                <span className="font-mono font-bold text-luxury-charcoal">{formatCurrency(createdInvoice.subtotal)}</span>
               </div>
+
+              {createdInvoice.discountAmount > 0 && (
+                <div className="flex justify-between text-luxury-gray">
+                  <span>Discount:</span>
+                  <span className="font-mono font-bold text-rose-600">-{formatCurrency(createdInvoice.discountAmount)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between text-luxury-gray">
-                <span>GST (3%):</span>
-                <span className="font-mono font-bold text-luxury-charcoal">₹{createdInvoice.tax?.toLocaleString('en-IN')}</span>
+                <span>Taxable Amount:</span>
+                <span className="font-mono font-bold text-luxury-charcoal">{formatCurrency(createdInvoice.taxableAmount ?? createdInvoice.subtotal)}</span>
               </div>
+
+              <div className="flex justify-between text-luxury-gray">
+                <span>GST Tax ({createdInvoice.gstEnabled ? `${createdInvoice.gstRate ?? 3}%` : 'OFF'}):</span>
+                <span className="font-mono font-bold text-luxury-charcoal">
+                  {createdInvoice.gstEnabled ? formatCurrency(createdInvoice.gstAmount ?? createdInvoice.tax) : '₹0.00 (Disabled)'}
+                </span>
+              </div>
+
               <div className="flex justify-between font-serif text-sm font-bold text-luxury-charcoal pt-2 border-t border-luxury-border">
                 <span>Grand Total:</span>
-                <span className="font-mono text-luxury-gold">₹{createdInvoice.grandTotal?.toLocaleString('en-IN')}</span>
+                <span className="font-mono text-luxury-gold">{formatCurrency(createdInvoice.grandTotal)}</span>
               </div>
+
               <div className="flex justify-between text-emerald-700 bg-emerald-50 px-2 py-1 rounded">
                 <span>Upfront Paid:</span>
-                <span className="font-mono font-bold">₹{(createdInvoice.immediatePayment || 0).toLocaleString('en-IN')}</span>
+                <span className="font-mono font-bold">{formatCurrency(createdInvoice.immediatePayment || 0)}</span>
               </div>
               <div className="flex justify-between text-amber-700 font-bold bg-amber-50 px-2 py-1 rounded">
                 <span>Net Credit Added:</span>
-                <span className="font-mono">₹{(createdInvoice.netCreditAdded || 0).toLocaleString('en-IN')}</span>
+                <span className="font-mono">{formatCurrency(createdInvoice.netCreditAdded || 0)}</span>
               </div>
             </div>
           </div>
@@ -649,7 +715,7 @@ export const AdminWholesaleBillingPage: React.FC = () => {
             <div className="space-y-2.5 pt-3 border-t border-luxury-border text-xs">
               <div className="flex justify-between text-luxury-gray">
                 <span>Items Subtotal:</span>
-                <span className="font-mono font-bold text-luxury-charcoal">₹{rawSubtotal.toLocaleString('en-IN')}</span>
+                <span className="font-mono font-bold text-luxury-charcoal">{formatCurrency(rawSubtotal)}</span>
               </div>
 
               <div className="flex items-center justify-between text-luxury-gray">
@@ -664,18 +730,50 @@ export const AdminWholesaleBillingPage: React.FC = () => {
               </div>
 
               <div className="flex justify-between text-luxury-gray">
-                <span>GST Taxable Value:</span>
-                <span className="font-mono font-bold text-luxury-charcoal">₹{taxableTotal.toLocaleString('en-IN')}</span>
+                <span>Taxable Amount:</span>
+                <span className="font-mono font-bold text-luxury-charcoal">{formatCurrency(taxableTotal)}</span>
               </div>
 
-              <div className="flex justify-between text-luxury-gray">
-                <span>GST Tax (3%):</span>
-                <span className="font-mono font-bold text-luxury-charcoal">₹{gstTax.toLocaleString('en-IN')}</span>
+              {/* GST Toggle & Rate Config */}
+              <div className="flex items-center justify-between p-2 bg-luxury-ivory/80 rounded-xl border border-luxury-border">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-luxury-charcoal">GST Tax:</span>
+                  <button
+                    type="button"
+                    onClick={() => setGstEnabled(!gstEnabled)}
+                    className={`px-2.5 py-0.5 rounded font-bold text-[10px] uppercase transition-all ${
+                      gstEnabled
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                    }`}
+                  >
+                    GST {gstEnabled ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+
+                {gstEnabled ? (
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <span className="text-[10px] text-luxury-gray font-sans font-bold">Rate:</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      value={gstRate}
+                      onChange={(e) => setGstRate(parseFloat(e.target.value) || 0)}
+                      className="w-12 bg-white border border-luxury-border rounded px-1 py-0.5 font-mono text-xs text-center font-bold"
+                    />
+                    <span className="text-xs font-bold">%</span>
+                    <span className="font-bold text-luxury-charcoal ml-2">{formatCurrency(gstTax)}</span>
+                  </div>
+                ) : (
+                  <span className="font-mono text-xs text-slate-500 font-medium">₹0.00 (Disabled)</span>
+                )}
               </div>
 
               <div className="flex justify-between text-base font-serif font-bold text-luxury-charcoal pt-2 border-t border-luxury-border">
                 <span>Grand Total:</span>
-                <span className="font-mono text-luxury-gold">₹{grandTotal.toLocaleString('en-IN')}</span>
+                <span className="font-mono text-luxury-gold">{formatCurrency(grandTotal)}</span>
               </div>
 
               {/* Upfront Payment & Net Credit */}
@@ -694,7 +792,7 @@ export const AdminWholesaleBillingPage: React.FC = () => {
 
                 <div className="flex justify-between items-center text-xs pt-1 border-t border-luxury-border">
                   <span className="text-luxury-gray">Net Credit Added to Ledger:</span>
-                  <span className="font-mono font-bold text-amber-700">₹{netCreditRequired.toLocaleString('en-IN')}</span>
+                  <span className="font-mono font-bold text-amber-700">{formatCurrency(netCreditRequired)}</span>
                 </div>
               </div>
             </div>
@@ -707,7 +805,7 @@ export const AdminWholesaleBillingPage: React.FC = () => {
                   Credit Limit Exceeded Warning
                 </div>
                 <p className="text-[11px] text-rose-700">
-                  This transaction requires ₹{netCreditRequired.toLocaleString('en-IN')} credit line, exceeding the available ₹{availableCredit.toLocaleString('en-IN')}. Requires Manager Override.
+                  This transaction requires {formatCurrency(netCreditRequired)} credit line, exceeding the available {formatCurrency(availableCredit)}. Requires Manager Override.
                 </p>
               </div>
             )}
@@ -840,6 +938,16 @@ export const AdminWholesaleBillingPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Customer Photo Preview Lightbox */}
+      <CustomerPhotoPreview
+        isOpen={previewPhotoModal.isOpen}
+        onClose={() => setPreviewPhotoModal({ ...previewPhotoModal, isOpen: false })}
+        photoUrl={previewPhotoModal.photoUrl}
+        businessName={previewPhotoModal.businessName}
+        contactPerson={previewPhotoModal.contactPerson}
+        mobile={previewPhotoModal.mobile}
+      />
     </div>
   );
 };

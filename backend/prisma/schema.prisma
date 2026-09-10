@@ -37,6 +37,7 @@ model Customer {
   email       String?
   address     String?
   gstin       String?
+  gstRegistered Boolean @default(false)
   totalOrders Int      @default(0)
   totalSpent  Float    @default(0.0)
   notes       String?
@@ -343,6 +344,10 @@ model Invoice {
   subtotal      Float
   tax           Float
   discount      Float     @default(0.0)
+  gstEnabled    Boolean   @default(false)
+  gstRate       Float     @default(0.0)
+  gstAmount     Float     @default(0.0)
+  taxableAmount Float     @default(0.0)
   grandTotal    Float
   status        String    @default("PAID")
   pdfUrl        String?
@@ -627,6 +632,7 @@ model WholesaleCustomer {
   city               String?
   state              String?
   gstin              String?
+  gstRegistered      Boolean  @default(false)
   pan                String?
   creditLimit        Float    @default(0.0)
   outstandingBalance Float    @default(0.0)
@@ -656,6 +662,10 @@ model WholesaleInvoice {
   subtotal            Float
   discount            Float    @default(0.0)
   tax                 Float    @default(0.0)
+  gstEnabled          Boolean  @default(false)
+  gstRate             Float    @default(0.0)
+  gstAmount           Float    @default(0.0)
+  taxableAmount       Float    @default(0.0)
   grandTotal          Float
   amountPaid          Float    @default(0.0)
   outstandingAmount   Float

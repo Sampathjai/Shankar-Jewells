@@ -21,6 +21,9 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
+import { CustomerPhotoPreview } from '../../../components/common/CustomerPhotoPreview';
+import { formatCurrency } from '../../../utils/formatters';
+
 interface WholesaleCustomer {
   id: string;
   businessName: string;
@@ -31,6 +34,7 @@ interface WholesaleCustomer {
   address?: string;
   city?: string;
   state?: string;
+  gstRegistered?: boolean;
   gstin?: string;
   pan?: string;
   creditLimit: number;
@@ -62,6 +66,15 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
   const [editingCustomer, setEditingCustomer] = useState<WholesaleCustomer | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Lightbox State
+  const [previewPhotoModal, setPreviewPhotoModal] = useState<{
+    isOpen: boolean;
+    photoUrl?: string;
+    businessName?: string;
+    contactPerson?: string;
+    mobile?: string;
+  }>({ isOpen: false });
+
   // Form Fields
   const [formData, setFormData] = useState({
     businessName: '',
@@ -72,6 +85,7 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
     address: '',
     city: '',
     state: '',
+    gstRegistered: false,
     gstin: '',
     pan: '',
     creditLimit: '500000',
@@ -263,6 +277,7 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
       address: '',
       city: '',
       state: '',
+      gstRegistered: false,
       gstin: '',
       pan: '',
       creditLimit: '500000',
@@ -290,6 +305,7 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
       address: c.address || '',
       city: c.city || '',
       state: c.state || '',
+      gstRegistered: c.gstRegistered ?? (!!c.gstin && c.gstin.trim() !== ''),
       gstin: c.gstin || '',
       pan: c.pan || '',
       creditLimit: c.creditLimit.toString(),
@@ -326,7 +342,7 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
       return;
     }
 
-    if (formData.gstin && formData.gstin.trim().length > 0) {
+    if (formData.gstRegistered && formData.gstin && formData.gstin.trim().length > 0) {
       const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
       if (!gstinRegex.test(formData.gstin.trim().toUpperCase())) {
         showToast('Please enter a valid 15-character GSTIN (e.g. 33AAAAA0000A1Z5).', 'error');
@@ -372,7 +388,8 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
       const payload = {
         ...formData,
         mobile: cleanMobile,
-        gstin: formData.gstin ? formData.gstin.trim().toUpperCase() : undefined,
+        gstRegistered: formData.gstRegistered,
+        gstin: formData.gstRegistered && formData.gstin ? formData.gstin.trim().toUpperCase() : null,
         creditLimit: parsedCreditLimit,
         dueDays: parseInt(formData.dueDays) || 30,
         photoUrl: uploadedPhotoUrl,
@@ -510,13 +527,26 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
                     <tr key={c.id} className="hover:bg-luxury-ivory/30 transition-colors">
                       {/* Photo Thumbnail */}
                       <td className="py-3.5 px-4 text-center">
-                        <div className="w-10 h-10 rounded-full bg-luxury-ivory border border-luxury-border overflow-hidden mx-auto flex items-center justify-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewPhotoModal({
+                              isOpen: true,
+                              photoUrl: c.photoUrl,
+                              businessName: c.businessName,
+                              contactPerson: c.contactPerson,
+                              mobile: c.mobile,
+                            })
+                          }
+                          className="w-10 h-10 rounded-full bg-luxury-ivory border border-luxury-border overflow-hidden mx-auto flex items-center justify-center shrink-0 hover:ring-2 hover:ring-luxury-gold hover:opacity-90 transition-all cursor-pointer group relative"
+                          title="Click to preview photo lightbox"
+                        >
                           {c.photoUrl ? (
                             <img src={c.photoUrl} alt={c.businessName} className="w-full h-full object-cover" />
                           ) : (
                             <span className="font-serif font-bold text-xs text-luxury-gold">{initials}</span>
                           )}
-                        </div>
+                        </button>
                       </td>
 
                       {/* Business & Contact */}
@@ -530,27 +560,29 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
                       {/* Phone & GSTIN */}
                       <td className="py-3.5 px-4">
                         <div className="font-mono text-luxury-charcoal font-semibold">{c.mobile}</div>
-                        {c.gstin ? (
-                          <div className="text-[10px] text-luxury-gray font-mono">GST: {c.gstin}</div>
+                        {c.gstRegistered || c.gstin ? (
+                          <div className="text-[10px] text-emerald-700 font-mono font-bold">
+                            GST: {c.gstin || 'Registered'}
+                          </div>
                         ) : (
-                          <div className="text-[10px] text-luxury-gray">Unregistered B2B</div>
+                          <div className="text-[10px] text-slate-500 font-medium">GST: Not Registered</div>
                         )}
                       </td>
 
                       {/* Credit Limit */}
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-luxury-charcoal">
-                        ₹{c.creditLimit.toLocaleString('en-IN')}
+                        {formatCurrency(c.creditLimit)}
                       </td>
 
                       {/* Outstanding Dues */}
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-amber-700">
-                        ₹{c.outstandingBalance.toLocaleString('en-IN')}
+                        {formatCurrency(c.outstandingBalance)}
                       </td>
 
                       {/* Available Credit */}
                       <td className="py-3.5 px-4 text-right font-mono font-bold">
                         <span className={availableCredit > 0 ? 'text-emerald-700' : 'text-rose-600'}>
-                          ₹{availableCredit.toLocaleString('en-IN')}
+                          {formatCurrency(availableCredit)}
                         </span>
                       </td>
 
@@ -772,16 +804,49 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-luxury-gray font-semibold mb-1">GSTIN Number</label>
-                        <input
-                          type="text"
-                          placeholder="33AAAAA0000A1Z5"
-                          value={formData.gstin}
-                          onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
-                          className="w-full bg-white border border-luxury-border rounded-xl px-3 py-2.5 font-mono text-luxury-charcoal focus:outline-none focus:border-luxury-gold shadow-sm uppercase"
-                        />
+                      <div className="sm:col-span-2 bg-luxury-ivory/50 p-3.5 rounded-xl border border-luxury-border">
+                        <label className="block text-luxury-charcoal font-bold mb-2">GST Registration Status</label>
+                        <div className="flex items-center gap-6">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="gstRegistered"
+                              checked={!formData.gstRegistered}
+                              onChange={() => setFormData({ ...formData, gstRegistered: false, gstin: '' })}
+                              className="w-4 h-4 text-luxury-gold focus:ring-luxury-gold"
+                            />
+                            <span className="font-semibold text-luxury-charcoal">Not Registered (Default - GST OFF)</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="gstRegistered"
+                              checked={formData.gstRegistered}
+                              onChange={() => setFormData({ ...formData, gstRegistered: true })}
+                              className="w-4 h-4 text-luxury-gold focus:ring-luxury-gold"
+                            />
+                            <span className="font-semibold text-luxury-charcoal">Registered (Has GSTIN)</span>
+                          </label>
+                        </div>
                       </div>
+
+                      {formData.gstRegistered ? (
+                        <div>
+                          <label className="block text-luxury-charcoal font-bold mb-1">GSTIN Number *</label>
+                          <input
+                            type="text"
+                            required={formData.gstRegistered}
+                            placeholder="33AAAAA0000A1Z5"
+                            value={formData.gstin}
+                            onChange={(e) => setFormData({ ...formData, gstin: e.target.value })}
+                            className="w-full bg-white border border-luxury-border rounded-xl px-3 py-2.5 font-mono text-luxury-charcoal focus:outline-none focus:border-luxury-gold shadow-sm uppercase font-bold"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center p-2.5 bg-slate-100 rounded-xl border border-slate-200 text-slate-500 text-xs font-medium">
+                          GST Not Registered • Customer saves without GSTIN requirement
+                        </div>
+                      )}
 
                       <div className="sm:col-span-2">
                         <label className="block text-luxury-gray font-semibold mb-1">Store / Business Address</label>
@@ -874,6 +939,16 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Customer Photo Preview Lightbox Modal */}
+      <CustomerPhotoPreview
+        isOpen={previewPhotoModal.isOpen}
+        onClose={() => setPreviewPhotoModal({ ...previewPhotoModal, isOpen: false })}
+        photoUrl={previewPhotoModal.photoUrl}
+        businessName={previewPhotoModal.businessName}
+        contactPerson={previewPhotoModal.contactPerson}
+        mobile={previewPhotoModal.mobile}
+      />
     </div>
   );
 };

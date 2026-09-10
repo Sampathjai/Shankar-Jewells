@@ -44,6 +44,7 @@ router.post(
       city,
       state,
       gstin,
+      gstRegistered,
       pan,
       creditLimit,
       paymentTerms,
@@ -63,6 +64,9 @@ router.post(
       throw new AppError('A wholesale customer with this mobile number already exists.', 400);
     }
 
+    const isGstRegistered = Boolean(gstRegistered);
+    const cleanGstin = isGstRegistered && gstin ? gstin.trim().toUpperCase() : null;
+
     const customer = await prisma.wholesaleCustomer.create({
       data: {
         businessName,
@@ -73,7 +77,8 @@ router.post(
         address: address || null,
         city: city || null,
         state: state || null,
-        gstin: gstin || null,
+        gstin: cleanGstin,
+        gstRegistered: isGstRegistered,
         pan: pan || null,
         creditLimit: parseFloat(creditLimit) || 0.0,
         paymentTerms: paymentTerms || '30 Days',
@@ -120,6 +125,7 @@ router.patch(
       city,
       state,
       gstin,
+      gstRegistered,
       pan,
       creditLimit,
       paymentTerms,
@@ -137,6 +143,9 @@ router.patch(
       }
     }
 
+    const isGstReg = gstRegistered !== undefined ? Boolean(gstRegistered) : existing.gstRegistered;
+    const cleanGstin = isGstReg ? (gstin !== undefined ? (gstin ? gstin.trim().toUpperCase() : null) : existing.gstin) : null;
+
     const updatedCustomer = await prisma.wholesaleCustomer.update({
       where: { id },
       data: {
@@ -148,7 +157,8 @@ router.patch(
         ...(address !== undefined && { address }),
         ...(city !== undefined && { city }),
         ...(state !== undefined && { state }),
-        ...(gstin !== undefined && { gstin }),
+        gstRegistered: isGstReg,
+        gstin: cleanGstin,
         ...(pan !== undefined && { pan }),
         ...(creditLimit !== undefined && { creditLimit: parseFloat(creditLimit) }),
         ...(paymentTerms !== undefined && { paymentTerms }),
@@ -212,7 +222,18 @@ router.post(
   '/invoices',
   authorize('SUPER_ADMIN', 'MANAGER', 'WHOLESALE_MANAGER', 'BILLING_STAFF'),
   catchAsync(async (req: AuthenticatedRequest, res: Response) => {
-    const { customerId, items, immediatePayment, paymentMethod, referenceNo, notes, creditOverride } = req.body;
+    const {
+      customerId,
+      items,
+      discount: rawDiscount,
+      gstEnabled: rawGstEnabled,
+      gstRate: rawGstRate,
+      immediatePayment,
+      paymentMethod,
+      referenceNo,
+      notes,
+      creditOverride,
+    } = req.body;
 
     if (!customerId || !items || !Array.isArray(items) || items.length === 0) {
       throw new AppError('Customer ID and at least one item are required.', 400);
@@ -224,6 +245,7 @@ router.post(
     }
 
     const paidNow = parseFloat(immediatePayment) || 0.0;
+    const discount = parseFloat(rawDiscount) || 0.0;
 
     // Calculate totals and validate products
     let subtotal = 0;
@@ -263,8 +285,12 @@ router.post(
       });
     }
 
-    const tax = subtotal * 0.03; // 3% GST
-    const grandTotal = subtotal + tax;
+    const taxableAmount = Math.max(0, subtotal - discount);
+    const gstEnabled = Boolean(rawGstEnabled);
+    const gstRate = gstEnabled ? (parseFloat(rawGstRate) >= 0 ? parseFloat(rawGstRate) : 3.0) : 0.0;
+    const gstAmount = gstEnabled ? taxableAmount * (gstRate / 100) : 0.0;
+    const grandTotal = taxableAmount + gstAmount;
+
     const newCreditAmount = Math.max(0, grandTotal - paidNow);
     const projectedOutstanding = customer.outstandingBalance + newCreditAmount;
 
@@ -296,7 +322,7 @@ router.post(
       const paymentStatus =
         paidNow >= grandTotal ? 'PAID' : paidNow > 0 ? 'PARTIAL' : 'CREDIT';
 
-      // 1. Create Invoice
+      // 1. Create Invoice with GST Snapshot
       const invoice = await tx.wholesaleInvoice.create({
         data: {
           invoiceNumber,
@@ -304,7 +330,12 @@ router.post(
           dueDate,
           paymentStatus,
           subtotal,
-          tax,
+          discount,
+          taxableAmount,
+          gstEnabled,
+          gstRate,
+          gstAmount,
+          tax: gstAmount,
           grandTotal,
           amountPaid: paidNow,
           outstandingAmount: newCreditAmount,
