@@ -82,6 +82,22 @@ app.use('/api/reports', reportsRouter);
 // Global Error Handler
 app.use(errorHandler);
 
+// Production Static Frontend Asset Serving
+import fs from 'fs';
+const rootFrontendDist = path.resolve(process.cwd(), '../frontend/dist');
+const localFrontendDist = path.resolve(__dirname, '../../frontend/dist');
+const distPath = fs.existsSync(rootFrontendDist) ? rootFrontendDist : fs.existsSync(localFrontendDist) ? localFrontendDist : null;
+
+if (distPath) {
+  app.use(express.static(distPath));
+  app.get('*', (req: Request, res: Response, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
 app.listen(PORT, () => {
   console.log(`✨ Jewellery Platform Backend API listening on port ${PORT}`);
   console.log(`📍 Health Check: http://localhost:${PORT}/api/health`);
