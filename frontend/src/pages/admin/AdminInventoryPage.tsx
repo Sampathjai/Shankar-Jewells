@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchApi } from '../../api/client';
+import { SmartImage } from '../../components/common/SmartImage';
 import {
   Vault,
   Plus,
@@ -294,12 +295,9 @@ export const AdminInventoryPage: React.FC = () => {
                 filteredProducts.map((p) => (
                   <tr key={p.id} className="hover:bg-luxury-beige/10 transition-colors">
                     <td className="py-3.5 px-4 flex items-center gap-3">
-                      <img
-                        src={p.images?.[0]?.url || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=300'}
+                      <SmartImage
+                        src={p.images?.[0]?.url}
                         alt={p.name}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=300';
-                        }}
                         className="w-10 h-10 rounded-lg object-cover border border-luxury-border shrink-0"
                       />
                       <div>

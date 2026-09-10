@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Product } from '../../types';
 import { fetchApi } from '../../api/client';
+import { SmartImage } from '../../components/common/SmartImage';
 import {
   Search,
   Plus,
@@ -722,12 +723,9 @@ export const AdminPOSBillingPage: React.FC = () => {
                       className="p-3 bg-white rounded-xl border border-luxury-border hover:border-luxury-gold shadow-sm flex items-center justify-between gap-3 transition-all"
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src={p.images?.[0]?.url || 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=300'}
+                        <SmartImage
+                          src={p.images?.[0]?.url}
                           alt={p.name}
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=300';
-                          }}
                           className="w-12 h-12 rounded-lg object-cover border border-luxury-border shrink-0"
                         />
                         <div className="text-xs">

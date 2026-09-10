@@ -4,9 +4,11 @@ import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Search, Heart, ShoppingBag, User as UserIcon, Menu, X, Sparkles, Gem } from 'lucide-react';
 import { AnnouncementBar } from './AnnouncementBar';
+import { MobileSearchModal } from '../common/MobileSearchModal';
 
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
@@ -26,26 +28,26 @@ export const Header: React.FC = () => {
     <header className="sticky top-0 z-40 bg-luxury-ivory/95 backdrop-blur-md border-b border-luxury-gold/15 transition-all">
       <AnnouncementBar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-4">
-        {/* Mobile Hamburger */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+        {/* Mobile Hamburger Drawer Trigger */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 text-luxury-charcoal hover:text-luxury-gold transition-colors"
+          className="lg:hidden p-2 text-luxury-charcoal hover:text-luxury-gold transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Toggle Navigation Menu"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
 
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-luxury-gold/50 flex items-center justify-center bg-luxury-charcoal text-luxury-gold group-hover:scale-105 transition-transform">
-            <Gem className="w-5 h-5" />
+        <Link to="/" className="flex items-center gap-2 group shrink-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-luxury-gold/50 flex items-center justify-center bg-luxury-charcoal text-luxury-gold group-hover:scale-105 transition-transform">
+            <Gem className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="flex flex-col">
-            <span className="font-serif text-xl sm:text-2xl font-bold tracking-widest text-luxury-charcoal uppercase leading-none">
+            <span className="font-serif text-base sm:text-2xl font-bold tracking-widest text-luxury-charcoal uppercase leading-none">
               SHANKER JEWELLS
             </span>
-            <span className="text-[9px] tracking-[0.25em] text-luxury-gold uppercase font-medium mt-0.5">
+            <span className="text-[8px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.25em] text-luxury-gold uppercase font-medium mt-0.5">
               TRICHY • SINCE 2000
             </span>
           </div>
@@ -65,9 +67,6 @@ export const Header: React.FC = () => {
           <Link to="/shop?category=silver-jewellery" className="hover:text-luxury-gold transition-colors">
             Silver
           </Link>
-          <Link to="/shop?collection=royal-heritage-bridal" className="hover:text-luxury-gold transition-colors">
-            Bridal
-          </Link>
           <Link to="/gold-silver-rate" className="hover:text-luxury-gold transition-colors">
             Live Rates
           </Link>
@@ -85,7 +84,17 @@ export const Header: React.FC = () => {
         </nav>
 
         {/* Right Header Action Icons */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-1 sm:gap-4">
+          {/* Mobile Search Button */}
+          <button
+            onClick={() => setMobileSearchOpen(true)}
+            className="sm:hidden p-2 text-luxury-charcoal hover:text-luxury-gold min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Mobile Search"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
+          {/* Desktop Search Form */}
           <form onSubmit={handleSearchSubmit} className="hidden sm:flex items-center relative">
             <input
               type="text"
@@ -99,7 +108,7 @@ export const Header: React.FC = () => {
             </button>
           </form>
 
-          <Link to="/account/wishlist" className="p-2 text-luxury-charcoal hover:text-luxury-gold relative">
+          <Link to="/account/wishlist" className="p-2 text-luxury-charcoal hover:text-luxury-gold relative min-h-[44px] min-w-[44px] flex items-center justify-center">
             <Heart className="w-5 h-5" />
             {wishlist.length > 0 && (
               <span className="absolute top-1 right-1 w-4 h-4 bg-luxury-gold text-white text-[10px] rounded-full flex items-center justify-center font-bold">
@@ -110,7 +119,7 @@ export const Header: React.FC = () => {
 
           <Link
             to={user ? (user.role === 'CUSTOMER' ? '/account' : '/admin') : '/admin/login'}
-            className="p-2 text-luxury-charcoal hover:text-luxury-gold transition-colors"
+            className="p-2 text-luxury-charcoal hover:text-luxury-gold transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             title={user ? `${user.name} (${user.role})` : 'Account Login'}
           >
             <UserIcon className="w-5 h-5" />
@@ -118,7 +127,7 @@ export const Header: React.FC = () => {
 
           <button
             onClick={openCart}
-            className="p-2 text-luxury-charcoal hover:text-luxury-gold relative transition-colors"
+            className="p-2 text-luxury-charcoal hover:text-luxury-gold relative transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Shopping Cart"
           >
             <ShoppingBag className="w-5 h-5" />
@@ -130,6 +139,66 @@ export const Header: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-luxury-charcoal text-luxury-ivory p-5 space-y-4 border-t border-luxury-gold/30 animate-in fade-in duration-200">
+          <nav className="flex flex-col space-y-3 font-medium text-sm">
+            <Link
+              to="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 border-b border-luxury-gold/15 hover:text-luxury-gold font-bold"
+            >
+              Home
+            </Link>
+            <Link
+              to="/shop"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 border-b border-luxury-gold/15 hover:text-luxury-gold"
+            >
+              All Jewellery Catalogue
+            </Link>
+            <Link
+              to="/shop?category=gold-jewellery"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 border-b border-luxury-gold/15 hover:text-luxury-gold"
+            >
+              Gold Jewellery Collection
+            </Link>
+            <Link
+              to="/shop?category=silver-jewellery"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 border-b border-luxury-gold/15 hover:text-luxury-gold"
+            >
+              Silver Ornaments Collection
+            </Link>
+            <Link
+              to="/gold-silver-rate"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 border-b border-luxury-gold/15 hover:text-luxury-gold"
+            >
+              Live Bullion Rates Today
+            </Link>
+            <Link
+              to="/gold-calculator"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 border-b border-luxury-gold/15 hover:text-luxury-gold"
+            >
+              Gold Price Calculator
+            </Link>
+            <Link
+              to="/custom-jewellery"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2.5 rounded-xl bg-luxury-gold text-white font-bold text-xs uppercase tracking-wider text-center flex items-center justify-center gap-2 mt-2 shadow-sm"
+            >
+              <Sparkles className="w-4 h-4" /> Custom Design Studio
+            </Link>
+          </nav>
+        </div>
+      )}
+
+      {/* Mobile Search Modal */}
+      <MobileSearchModal isOpen={mobileSearchOpen} onClose={() => setMobileSearchOpen(false)} />
     </header>
   );
 };

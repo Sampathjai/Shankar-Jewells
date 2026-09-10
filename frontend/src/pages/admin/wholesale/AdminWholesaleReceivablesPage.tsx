@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchApi } from '../../../api/client';
+import { formatCurrency } from '../../../utils/formatters';
 import {
   TrendingDown,
   AlertTriangle,
@@ -60,12 +61,12 @@ export const AdminWholesaleReceivablesPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-8 space-y-6 bg-luxury-ivory min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 bg-luxury-ivory min-h-screen">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-luxury-border pb-4">
         <div>
-          <h1 className="font-serif text-2xl text-luxury-charcoal font-bold flex items-center gap-3">
-            <TrendingDown className="w-7 h-7 text-luxury-gold" />
+          <h1 className="font-serif text-xl sm:text-2xl text-luxury-charcoal font-bold flex items-center gap-3">
+            <TrendingDown className="w-6 h-6 sm:w-7 sm:h-7 text-luxury-gold" />
             Wholesale Accounts Receivables & Aging Analysis
           </h1>
           <p className="text-xs text-luxury-gray mt-1">
@@ -75,7 +76,7 @@ export const AdminWholesaleReceivablesPage: React.FC = () => {
 
         <button
           onClick={() => window.print()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-luxury-gold hover:bg-luxury-gold/90 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-luxury-gold hover:bg-luxury-gold/90 text-white rounded-xl text-xs font-bold shadow-sm transition-all min-h-[44px]"
         >
           <Printer className="w-4 h-4" /> Print Aging Report
         </button>
@@ -92,38 +93,91 @@ export const AdminWholesaleReceivablesPage: React.FC = () => {
       ) : data ? (
         <>
           {/* Summary Metric Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <div className="bg-white border border-luxury-border rounded-2xl p-5 shadow-card space-y-1">
               <span className="text-[10px] uppercase font-bold text-luxury-gray tracking-wider">Total Wholesale B2B Sales</span>
               <div className="text-2xl font-serif font-bold text-luxury-charcoal">
-                ₹{data.totalWholesaleSales.toLocaleString('en-IN')}
+                {formatCurrency(data.totalWholesaleSales)}
               </div>
             </div>
 
             <div className="bg-white border border-luxury-border rounded-2xl p-5 shadow-card space-y-1">
               <span className="text-[10px] uppercase font-bold text-luxury-gray tracking-wider">Total Payments Collected</span>
               <div className="text-2xl font-serif font-bold text-emerald-700">
-                ₹{data.totalCollected.toLocaleString('en-IN')}
+                {formatCurrency(data.totalCollected)}
               </div>
             </div>
 
             <div className="bg-white border border-luxury-border rounded-2xl p-5 shadow-card space-y-1">
               <span className="text-[10px] uppercase font-bold text-luxury-gray tracking-wider">Total Outstanding Dues</span>
               <div className="text-2xl font-serif font-bold text-amber-700">
-                ₹{data.totalOutstanding.toLocaleString('en-IN')}
+                {formatCurrency(data.totalOutstanding)}
               </div>
             </div>
 
             <div className="bg-white border border-luxury-border rounded-2xl p-5 shadow-card space-y-1">
               <span className="text-[10px] uppercase font-bold text-rose-700 tracking-wider">Total Overdue Receivables</span>
               <div className="text-2xl font-serif font-bold text-rose-700">
-                ₹{data.totalOverdue.toLocaleString('en-IN')}
+                {formatCurrency(data.totalOverdue)}
               </div>
             </div>
           </div>
 
-          {/* Aging Analysis Table */}
-          <div className="bg-white border border-luxury-border rounded-2xl p-6 shadow-card space-y-4">
+          {/* Mobile Card List (< md) */}
+          <div className="block md:hidden space-y-3">
+            <h3 className="font-serif text-sm font-bold text-luxury-charcoal uppercase tracking-wider flex items-center justify-between pt-2">
+              <span>B2B Receivables Cards ({data.customers.length})</span>
+            </h3>
+            {data.customers.map((c) => (
+              <div key={c.id} className="bg-white border border-luxury-border rounded-2xl p-4 shadow-card space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-serif text-base font-bold text-luxury-charcoal">{c.businessName}</h4>
+                    <p className="text-xs text-luxury-gray">{c.contactPerson ? `${c.contactPerson} • ` : ''}{c.mobile}</p>
+                  </div>
+                  <Link
+                    to={`/admin/wholesale/ledger/${c.id}`}
+                    className="px-3 py-1.5 bg-luxury-beige/50 border border-luxury-gold/30 text-luxury-gold font-bold text-xs rounded-xl flex items-center gap-1 min-h-[44px]"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5" /> Ledger
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-luxury-border/60">
+                  <div>
+                    <span className="text-[10px] text-luxury-gray uppercase block">Approved Limit</span>
+                    <span className="font-mono font-semibold">{formatCurrency(c.creditLimit)}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-luxury-gray uppercase block">Total Dues</span>
+                    <span className="font-mono font-bold text-luxury-gold text-sm">{formatCurrency(c.outstandingBalance)}</span>
+                  </div>
+                </div>
+
+                <div className="bg-luxury-beige/30 p-2.5 rounded-xl grid grid-cols-4 gap-1 text-[10px] text-center">
+                  <div>
+                    <span className="text-luxury-gray block">0-30 Days</span>
+                    <strong className="text-emerald-700">{formatCurrency(c.aging.current + c.aging.d1_30)}</strong>
+                  </div>
+                  <div>
+                    <span className="text-luxury-gray block">31-60 Days</span>
+                    <strong className="text-amber-700">{formatCurrency(c.aging.d31_60)}</strong>
+                  </div>
+                  <div>
+                    <span className="text-luxury-gray block">61-90 Days</span>
+                    <strong className="text-amber-800">{formatCurrency(c.aging.d61_90)}</strong>
+                  </div>
+                  <div>
+                    <span className="text-rose-700 font-bold block">90+ Days</span>
+                    <strong className="text-rose-700 font-bold">{formatCurrency(c.aging.d90_plus)}</strong>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Aging Analysis Table (>= md) */}
+          <div className="hidden md:block bg-white border border-luxury-border rounded-2xl p-6 shadow-card space-y-4">
             <h3 className="font-serif text-base font-bold text-luxury-charcoal uppercase tracking-wider flex items-center justify-between border-b border-luxury-border pb-3">
               <span className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-luxury-gold" /> B2B Retailer Receivables Aging Buckets
@@ -152,12 +206,12 @@ export const AdminWholesaleReceivablesPage: React.FC = () => {
                         <div className="font-bold text-luxury-charcoal">{c.businessName}</div>
                         <div className="text-[10px] text-luxury-gray">{c.mobile}</div>
                       </td>
-                      <td className="py-3 px-3 text-right font-mono">₹{c.creditLimit.toLocaleString('en-IN')}</td>
-                      <td className="py-3 px-3 text-right font-mono text-emerald-700">₹{(c.aging.current + c.aging.d1_30).toLocaleString('en-IN')}</td>
-                      <td className="py-3 px-3 text-right font-mono text-amber-700">₹{c.aging.d31_60.toLocaleString('en-IN')}</td>
-                      <td className="py-3 px-3 text-right font-mono text-amber-800">₹{c.aging.d61_90.toLocaleString('en-IN')}</td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-rose-700">₹{c.aging.d90_plus.toLocaleString('en-IN')}</td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-luxury-charcoal text-sm">₹{c.outstandingBalance.toLocaleString('en-IN')}</td>
+                      <td className="py-3 px-3 text-right font-mono">{formatCurrency(c.creditLimit)}</td>
+                      <td className="py-3 px-3 text-right font-mono text-emerald-700">{formatCurrency(c.aging.current + c.aging.d1_30)}</td>
+                      <td className="py-3 px-3 text-right font-mono text-amber-700">{formatCurrency(c.aging.d31_60)}</td>
+                      <td className="py-3 px-3 text-right font-mono text-amber-800">{formatCurrency(c.aging.d61_90)}</td>
+                      <td className="py-3 px-3 text-right font-mono font-bold text-rose-700">{formatCurrency(c.aging.d90_plus)}</td>
+                      <td className="py-3 px-3 text-right font-mono font-bold text-luxury-charcoal text-sm">{formatCurrency(c.outstandingBalance)}</td>
                       <td className="py-3 px-3 text-center">
                         <Link
                           to={`/admin/wholesale/ledger/${c.id}`}

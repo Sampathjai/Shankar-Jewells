@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, User } from 'lucide-react';
+import { resolveImageUrl } from '../../utils/imageUrlResolver';
 
 interface CustomerPhotoPreviewProps {
   isOpen: boolean;
@@ -40,6 +41,8 @@ export const CustomerPhotoPreview: React.FC<CustomerPhotoPreviewProps> = ({
         .toUpperCase()
     : 'CU';
 
+  const resolvedUrl = photoUrl ? resolveImageUrl(photoUrl) : null;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
@@ -73,9 +76,9 @@ export const CustomerPhotoPreview: React.FC<CustomerPhotoPreviewProps> = ({
 
         {/* Content Body */}
         <div className="flex-1 p-6 flex items-center justify-center bg-slate-950/60 overflow-hidden">
-          {photoUrl ? (
+          {resolvedUrl ? (
             <img
-              src={photoUrl}
+              src={resolvedUrl}
               alt={businessName}
               className="max-h-[65vh] w-auto max-w-full object-contain rounded-lg shadow-lg border border-slate-800"
               onError={(e) => {
@@ -110,3 +113,4 @@ export const CustomerPhotoPreview: React.FC<CustomerPhotoPreviewProps> = ({
     </div>
   );
 };
+

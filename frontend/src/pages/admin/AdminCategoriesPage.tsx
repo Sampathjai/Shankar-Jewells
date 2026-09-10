@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../api/client';
+import { SmartImage } from '../../components/common/SmartImage';
 import {
   FolderTree,
   Plus,
@@ -263,11 +264,7 @@ export const AdminCategoriesPage: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="w-16 h-16 rounded-xl bg-luxury-ivory border border-luxury-border flex items-center justify-center overflow-hidden shrink-0">
-                    {cat.imageUrl ? (
-                      <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Sparkles className="w-6 h-6 text-luxury-gold/50" />
-                    )}
+                    <SmartImage src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
                   </div>
 
                   <div className="flex-1 min-w-0">

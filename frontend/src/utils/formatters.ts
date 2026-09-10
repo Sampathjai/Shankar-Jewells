@@ -38,3 +38,4 @@ export const formatWeight = (grams: number | string | null | undefined): string 
 
   return `${numericVal.toFixed(3)} g`;
 };
+

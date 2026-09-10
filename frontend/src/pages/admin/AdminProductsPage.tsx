@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Product } from '../../types';
 import { fetchApi } from '../../api/client';
+import { SmartImage } from '../../components/common/SmartImage';
 import {
   Plus,
   Search,
@@ -270,11 +271,7 @@ export const AdminProductsPage: React.FC = () => {
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-luxury-ivory border border-luxury-border overflow-hidden shrink-0 flex items-center justify-center">
-                          {primaryImg ? (
-                            <img src={primaryImg} alt={p.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <Sparkles className="w-5 h-5 text-luxury-gold/50" />
-                          )}
+                          <SmartImage src={primaryImg} alt={p.name} className="w-full h-full object-cover" />
                         </div>
                         <div>
                           <div className="font-bold text-luxury-charcoal text-xs">{p.name}</div>

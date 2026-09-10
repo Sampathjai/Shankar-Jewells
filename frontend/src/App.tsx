@@ -4,6 +4,10 @@ import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { CartDrawer } from './components/layout/CartDrawer';
 import { AdminSidebar } from './components/layout/AdminSidebar';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
+import { MobileLiveRatesTicker } from './components/layout/MobileLiveRatesTicker';
+import { MobileAdminHeader } from './components/layout/MobileAdminHeader';
+import { MobileAdminNav } from './components/layout/MobileAdminNav';
 
 import { HomePage } from './pages/customer/HomePage';
 import { ShopPage } from './pages/customer/ShopPage';
@@ -38,17 +42,18 @@ import { AdminWholesaleLedgerPage } from './pages/admin/wholesale/AdminWholesale
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 
 import { ToastProvider } from './components/common/Toast';
-import { Menu, Gem } from 'lucide-react';
 
 const CustomerLayout: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col justify-between">
+    <div className="min-h-screen flex flex-col justify-between bg-luxury-ivory text-luxury-charcoal pb-16 lg:pb-0">
       <Header />
+      <MobileLiveRatesTicker />
       <main className="flex-1">
         <Outlet />
       </main>
       <CartDrawer />
       <Footer />
+      <MobileBottomNav />
     </div>
   );
 };
@@ -57,27 +62,22 @@ const AdminLayout: React.FC = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex bg-luxury-ivory text-luxury-charcoal admin-layout">
+    <div className="h-screen w-screen overflow-hidden flex flex-col lg:flex-row bg-luxury-ivory text-luxury-charcoal admin-layout">
+      {/* Desktop Sidebar */}
       <AdminSidebar isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Mobile Header Bar */}
-        <div className="lg:hidden bg-luxury-charcoal text-white p-3.5 flex items-center justify-between border-b border-luxury-gold/20 shrink-0">
-          <div className="flex items-center gap-2 font-serif font-bold text-sm">
-            <Gem className="w-4 h-4 text-luxury-gold" /> SHANKER JEWELLS ERP
-          </div>
-          <button
-            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Independent Main Content Scroll Area */}
-        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden custom-admin-scrollbar admin-main">
+      {/* Mobile Top App Bar Header */}
+      <MobileAdminHeader />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden custom-admin-scrollbar admin-main pb-20 lg:pb-0">
           <Outlet />
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation & Drawer */}
+      <MobileAdminNav />
     </div>
   );
 };
@@ -86,57 +86,60 @@ export const App: React.FC = () => {
   return (
     <ToastProvider>
       <Router>
-      <Routes>
-        {/* Customer Routes */}
-        <Route element={<CustomerLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/shop" element={<ShopPage />} />
-          <Route path="/gold" element={<ShopPage />} />
-          <Route path="/gold-jewellery" element={<ShopPage />} />
-          <Route path="/silver" element={<ShopPage />} />
-          <Route path="/silver-jewellery" element={<ShopPage />} />
-          <Route path="/product/:slug" element={<ProductDetailPage />} />
-          <Route path="/custom-jewellery" element={<CustomJewelleryPage />} />
-          <Route path="/gold-silver-rate" element={<GoldRatePage />} />
-          <Route path="/gold-calculator" element={<GoldCalculatorPage />} />
-          <Route path="/quotation/:token" element={<CustomerQuotationPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/order-success" element={<OrderSuccessPage />} />
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="/account/*" element={<AccountPage />} />
-        </Route>
+        <Routes>
+          {/* Customer Public Routes */}
+          <Route element={<CustomerLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/shop" element={<ShopPage />} />
+            <Route path="/gold" element={<ShopPage />} />
+            <Route path="/gold-jewellery" element={<ShopPage />} />
+            <Route path="/silver" element={<ShopPage />} />
+            <Route path="/silver-jewellery" element={<ShopPage />} />
+            <Route path="/product/:slug" element={<ProductDetailPage />} />
+            <Route path="/custom-jewellery" element={<CustomJewelleryPage />} />
+            <Route path="/gold-silver-rate" element={<GoldRatePage />} />
+            <Route path="/gold-calculator" element={<GoldCalculatorPage />} />
+            <Route path="/quotation/:token" element={<CustomerQuotationPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/order-success" element={<OrderSuccessPage />} />
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/account/*" element={<AccountPage />} />
+          </Route>
 
-        {/* Admin Login */}
-        <Route path="/admin/login" element={<AdminLoginPage />} />
+          {/* Admin Login */}
+          <Route path="/admin/login" element={<AdminLoginPage />} />
 
-        {/* Admin Portal Protected Layout */}
-        <Route element={<AdminLayout />}>
-          <Route path="/admin" element={<AdminDashboardPage />} />
-          <Route path="/admin/products" element={<AdminProductsPage />} />
-          <Route path="/admin/categories" element={<AdminCategoriesPage />} />
-          <Route path="/admin/metal-rates" element={<AdminMetalRatesPage />} />
-          <Route path="/admin/inventory" element={<AdminInventoryPage />} />
-          <Route path="/admin/custom-requests" element={<AdminCustomRequestsPage />} />
-          <Route path="/admin/billing" element={<AdminPOSBillingPage />} />
-          <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
-          <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
+          {/* Admin Portal Protected Layout */}
+          <Route element={<AdminLayout />}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/products" element={<AdminProductsPage />} />
+            <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+            <Route path="/admin/metal-rates" element={<AdminMetalRatesPage />} />
+            <Route path="/admin/inventory" element={<AdminInventoryPage />} />
+            <Route path="/admin/custom-requests" element={<AdminCustomRequestsPage />} />
+            <Route path="/admin/pos" element={<AdminPOSBillingPage />} />
+            <Route path="/admin/billing" element={<AdminPOSBillingPage />} />
+            <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
 
-          {/* Wholesale B2B Routes */}
-          <Route path="/admin/wholesale" element={<AdminWholesaleBillingPage />} />
-          <Route path="/admin/wholesale/customers" element={<AdminWholesaleCustomersPage />} />
-          <Route path="/admin/wholesale/payments" element={<AdminWholesalePaymentsPage />} />
-          <Route path="/admin/wholesale/receivables" element={<AdminWholesaleReceivablesPage />} />
-          <Route path="/admin/wholesale/ledger/:customerId" element={<AdminWholesaleLedgerPage />} />
+            {/* Wholesale B2B Routes */}
+            <Route path="/admin/wholesale" element={<AdminWholesaleBillingPage />} />
+            <Route path="/admin/wholesale/billing" element={<AdminWholesaleBillingPage />} />
+            <Route path="/admin/wholesale/customers" element={<AdminWholesaleCustomersPage />} />
+            <Route path="/admin/wholesale/payments" element={<AdminWholesalePaymentsPage />} />
+            <Route path="/admin/wholesale/receivables" element={<AdminWholesaleReceivablesPage />} />
+            <Route path="/admin/wholesale/ledger/:customerId" element={<AdminWholesaleLedgerPage />} />
 
-          {/* Safe Fallback Redirect for Legacy Consignment Links */}
-          <Route path="/admin/consignment/*" element={<Navigate to="/admin" replace />} />
+            {/* Safe Fallback Redirect for Legacy Consignment Links */}
+            <Route path="/admin/consignment/*" element={<Navigate to="/admin" replace />} />
 
-          {/* User Management Route */}
-          <Route path="/admin/users" element={<AdminUsersPage />} />
-        </Route>
-      </Routes>
-    </Router>
-  </ToastProvider>
+            {/* User Management Route */}
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+          </Route>
+        </Routes>
+      </Router>
+    </ToastProvider>
   );
 };
 
