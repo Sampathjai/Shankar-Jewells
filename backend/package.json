@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "DATABASE_URL=\"${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/postgres}\" prisma generate && tsc",
     "start": "node dist/server.js",
     "test": "tsx scripts/run-tests.ts",
     "prisma:generate": "prisma generate",
