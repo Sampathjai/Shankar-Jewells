@@ -83,3 +83,4 @@ export const MobileLiveRatesTicker: React.FC = () => {
 };
 
 export default MobileLiveRatesTicker;
+

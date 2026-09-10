@@ -140,3 +140,4 @@ export const MobileSearchModal: React.FC<MobileSearchModalProps> = ({ isOpen, on
 };
 
 export default MobileSearchModal;
+

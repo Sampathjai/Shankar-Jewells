@@ -91,3 +91,4 @@ export function resolveImageUrl(url: string | null | undefined): string {
   const filename = cleanUrl.replace(/^\/+/, '');
   return apiBase ? `${apiBase}/uploads/${filename}` : `/uploads/${filename}`;
 }
+
