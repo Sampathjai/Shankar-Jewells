@@ -3,11 +3,40 @@ import prisma from '../../config/db.js';
 import { catchAsync, AppError } from '../../utils/errors.js';
 import { authenticate, authorize, AuthenticatedRequest } from '../../middleware/auth.js';
 import { recordAuditLog } from '../../middleware/audit.js';
+import {
+  convertGoldTo24KEquivalent,
+  convertCashTo24KEquivalent,
+  calculateInvoiceGoldEquivalent,
+  calculateMixedSettlement,
+  roundGoldGrams,
+  roundCurrency,
+} from '../../services/gold-equivalent.service.js';
+import { getActive24KGoldRate } from '../metal-rates/metal-rates.router.js';
 
 const router = Router();
 
 // All wholesale routes require authentication and appropriate roles
 router.use(authenticate);
+
+/**
+ * Helper to enrich wholesale customer with dynamic gold-equivalent & INR calculations
+ */
+function enrichCustomer(customer: any, activeRate24K: number) {
+  const creditLimitGoldGrams = roundGoldGrams(customer.creditLimitGoldGrams || 0, 4);
+  const outstandingGoldGrams = roundGoldGrams(customer.outstandingGoldGrams || 0, 4);
+  const availableCreditGoldGrams = roundGoldGrams(Math.max(0, creditLimitGoldGrams - outstandingGoldGrams), 4);
+
+  return {
+    ...customer,
+    creditLimitGoldGrams,
+    outstandingGoldGrams,
+    availableCreditGoldGrams,
+    activeRate24K,
+    currentCreditLimitInr: roundCurrency(creditLimitGoldGrams * activeRate24K),
+    currentOutstandingInr: roundCurrency(outstandingGoldGrams * activeRate24K),
+    currentAvailableCreditInr: roundCurrency(availableCreditGoldGrams * activeRate24K),
+  };
+}
 
 // ============================================================
 // WHOLESALE CUSTOMERS
@@ -18,6 +47,8 @@ router.get(
   '/customers',
   authorize('SUPER_ADMIN', 'MANAGER', 'WHOLESALE_MANAGER', 'BILLING_STAFF'),
   catchAsync(async (req: Request, res: Response) => {
+    const activeRate = await getActive24KGoldRate();
+
     const customers = await prisma.wholesaleCustomer.findMany({
       include: {
         _count: { select: { invoices: true, payments: true } },
@@ -25,7 +56,13 @@ router.get(
       orderBy: { businessName: 'asc' },
     });
 
-    res.status(200).json({ success: true, data: customers });
+    const enriched = customers.map((c) => enrichCustomer(c, activeRate));
+
+    res.status(200).json({
+      success: true,
+      activeRate24K: activeRate,
+      data: enriched,
+    });
   })
 );
 
@@ -47,6 +84,7 @@ router.post(
       gstRegistered,
       pan,
       creditLimit,
+      creditLimitGoldGrams: rawGoldGrams,
       paymentTerms,
       dueDays,
       discountRules,
@@ -64,8 +102,19 @@ router.post(
       throw new AppError('A wholesale customer with this mobile number already exists.', 400);
     }
 
+    const activeRate = await getActive24KGoldRate();
+    let finalGoldGrams = 0;
+
+    if (rawGoldGrams !== undefined && rawGoldGrams !== null && rawGoldGrams !== '') {
+      finalGoldGrams = roundGoldGrams(parseFloat(rawGoldGrams), 4);
+    } else if (creditLimit !== undefined && creditLimit !== null && creditLimit !== '') {
+      const inr = parseFloat(creditLimit) || 0;
+      finalGoldGrams = roundGoldGrams(inr / activeRate, 4);
+    }
+
     const isGstRegistered = Boolean(gstRegistered);
     const cleanGstin = isGstRegistered && gstin ? gstin.trim().toUpperCase() : null;
+    const finalInrLimit = roundCurrency(finalGoldGrams * activeRate);
 
     const customer = await prisma.wholesaleCustomer.create({
       data: {
@@ -80,7 +129,10 @@ router.post(
         gstin: cleanGstin,
         gstRegistered: isGstRegistered,
         pan: pan || null,
-        creditLimit: parseFloat(creditLimit) || 0.0,
+        creditLimit: finalInrLimit,
+        creditLimitGoldGrams: finalGoldGrams,
+        outstandingBalance: 0.0,
+        outstandingGoldGrams: 0.0,
         paymentTerms: paymentTerms || '30 Days',
         dueDays: parseInt(dueDays) || 30,
         discountRules: discountRules || null,
@@ -100,7 +152,11 @@ router.post(
       newValue: JSON.stringify(customer),
     });
 
-    res.status(201).json({ success: true, data: customer, message: 'Wholesale customer created.' });
+    res.status(201).json({
+      success: true,
+      data: enrichCustomer(customer, activeRate),
+      message: 'Wholesale customer created.',
+    });
   })
 );
 
@@ -128,6 +184,7 @@ router.patch(
       gstRegistered,
       pan,
       creditLimit,
+      creditLimitGoldGrams: rawGoldGrams,
       paymentTerms,
       dueDays,
       status,
@@ -143,8 +200,19 @@ router.patch(
       }
     }
 
+    const activeRate = await getActive24KGoldRate();
+    let updatedGoldGrams = existing.creditLimitGoldGrams;
+
+    if (rawGoldGrams !== undefined && rawGoldGrams !== null && rawGoldGrams !== '') {
+      updatedGoldGrams = roundGoldGrams(parseFloat(rawGoldGrams), 4);
+    } else if (creditLimit !== undefined && creditLimit !== null && creditLimit !== '') {
+      const inr = parseFloat(creditLimit) || 0;
+      updatedGoldGrams = roundGoldGrams(inr / activeRate, 4);
+    }
+
     const isGstReg = gstRegistered !== undefined ? Boolean(gstRegistered) : existing.gstRegistered;
     const cleanGstin = isGstReg ? (gstin !== undefined ? (gstin ? gstin.trim().toUpperCase() : null) : existing.gstin) : null;
+    const updatedInrLimit = roundCurrency(updatedGoldGrams * activeRate);
 
     const updatedCustomer = await prisma.wholesaleCustomer.update({
       where: { id },
@@ -160,7 +228,8 @@ router.patch(
         gstRegistered: isGstReg,
         gstin: cleanGstin,
         ...(pan !== undefined && { pan }),
-        ...(creditLimit !== undefined && { creditLimit: parseFloat(creditLimit) }),
+        creditLimit: updatedInrLimit,
+        creditLimitGoldGrams: updatedGoldGrams,
         ...(paymentTerms !== undefined && { paymentTerms }),
         ...(dueDays !== undefined && { dueDays: parseInt(dueDays) }),
         ...(status !== undefined && { status }),
@@ -179,7 +248,11 @@ router.patch(
       newValue: JSON.stringify(updatedCustomer),
     });
 
-    res.status(200).json({ success: true, data: updatedCustomer, message: 'Wholesale customer updated.' });
+    res.status(200).json({
+      success: true,
+      data: enrichCustomer(updatedCustomer, activeRate),
+      message: 'Wholesale customer updated.',
+    });
   })
 );
 
@@ -188,6 +261,8 @@ router.get(
   '/customers/:id',
   authorize('SUPER_ADMIN', 'MANAGER', 'WHOLESALE_MANAGER', 'BILLING_STAFF'),
   catchAsync(async (req: Request, res: Response) => {
+    const activeRate = await getActive24KGoldRate();
+
     const customer = await prisma.wholesaleCustomer.findUnique({
       where: { id: req.params.id },
       include: {
@@ -201,14 +276,9 @@ router.get(
       throw new AppError('Wholesale customer not found.', 404);
     }
 
-    const availableCredit = Math.max(0, customer.creditLimit - customer.outstandingBalance);
-
     res.status(200).json({
       success: true,
-      data: {
-        ...customer,
-        availableCredit,
-      },
+      data: enrichCustomer(customer, activeRate),
     });
   })
 );
@@ -244,6 +314,7 @@ router.post(
       throw new AppError('Customer is invalid or blocked from credit transactions.', 400);
     }
 
+    const activeRate = await getActive24KGoldRate();
     const paidNow = parseFloat(immediatePayment) || 0.0;
     const discount = parseFloat(rawDiscount) || 0.0;
 
@@ -289,17 +360,22 @@ router.post(
     const gstEnabled = Boolean(rawGstEnabled);
     const gstRate = gstEnabled ? (parseFloat(rawGstRate) >= 0 ? parseFloat(rawGstRate) : 3.0) : 0.0;
     const gstAmount = gstEnabled ? taxableAmount * (gstRate / 100) : 0.0;
-    const grandTotal = taxableAmount + gstAmount;
+    const grandTotal = roundCurrency(taxableAmount + gstAmount);
 
-    const newCreditAmount = Math.max(0, grandTotal - paidNow);
-    const projectedOutstanding = customer.outstandingBalance + newCreditAmount;
+    const newCreditInr = Math.max(0, grandTotal - paidNow);
+    const invoiceGoldEquivalent = roundGoldGrams(grandTotal / activeRate, 4);
+    const paidNowGoldEq = roundGoldGrams(paidNow / activeRate, 4);
+    const newCreditGoldEq = roundGoldGrams(newCreditInr / activeRate, 4);
 
-    // Credit Limit Verification
+    const projectedOutstandingGold = roundGoldGrams(customer.outstandingGoldGrams + newCreditGoldEq, 4);
+    const availableGoldBefore = roundGoldGrams(Math.max(0, customer.creditLimitGoldGrams - customer.outstandingGoldGrams), 4);
+
+    // Credit Limit Verification in 24K GOLD GRAMS
     let isOverride = false;
-    if (projectedOutstanding > customer.creditLimit) {
+    if (projectedOutstandingGold > customer.creditLimitGoldGrams) {
       if (!creditOverride) {
         throw new AppError(
-          `Credit limit exceeded! Limit: ₹${customer.creditLimit.toLocaleString('en-IN')}, Current Outstanding: ₹${customer.outstandingBalance.toLocaleString('en-IN')}, Bill Net Credit: ₹${newCreditAmount.toLocaleString('en-IN')}. Requires Manager override.`,
+          `CREDIT LIMIT EXCEEDED! Approved Credit: ${customer.creditLimitGoldGrams.toFixed(4)} g 24K, Current Outstanding: ${customer.outstandingGoldGrams.toFixed(4)} g 24K, Available: ${availableGoldBefore.toFixed(4)} g 24K. Invoice Credit: ${newCreditGoldEq.toFixed(4)} g 24K. Manager override required.`,
           400
         );
       }
@@ -319,26 +395,27 @@ router.post(
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + customer.dueDays);
 
-      const paymentStatus =
-        paidNow >= grandTotal ? 'PAID' : paidNow > 0 ? 'PARTIAL' : 'CREDIT';
+      const paymentStatus = paidNow >= grandTotal ? 'PAID' : paidNow > 0 ? 'PARTIAL' : 'CREDIT';
 
-      // 1. Create Invoice with GST Snapshot
+      // 1. Create Invoice with 24K Rate Snapshot & Gold Equivalent
       const invoice = await tx.wholesaleInvoice.create({
         data: {
           invoiceNumber,
           customerId: customer.id,
           dueDate,
           paymentStatus,
-          subtotal,
-          discount,
-          taxableAmount,
+          subtotal: roundCurrency(subtotal),
+          discount: roundCurrency(discount),
+          taxableAmount: roundCurrency(taxableAmount),
           gstEnabled,
           gstRate,
-          gstAmount,
-          tax: gstAmount,
+          gstAmount: roundCurrency(gstAmount),
+          tax: roundCurrency(gstAmount),
           grandTotal,
-          amountPaid: paidNow,
-          outstandingAmount: newCreditAmount,
+          amountPaid: roundCurrency(paidNow),
+          outstandingAmount: roundCurrency(newCreditInr),
+          rate24K: activeRate,
+          goldEquivalentGrams: invoiceGoldEquivalent,
           creditOverrideBy: isOverride ? req.user?.email : null,
           creditOverrideNotes: isOverride ? creditOverride.reason || 'Manager Override' : null,
           notes: notes || null,
@@ -359,31 +436,47 @@ router.post(
             paymentNumber,
             customerId: customer.id,
             invoiceId: invoice.id,
-            amount: paidNow,
+            amount: roundCurrency(paidNow),
+            paymentType: 'CASH',
             paymentMethod: paymentMethod || 'BANK_TRANSFER',
+            rate24K: activeRate,
+            cashAmount: roundCurrency(paidNow),
+            cashEquivalent24KGrams: paidNowGoldEq,
+            totalEquivalent24KGrams: paidNowGoldEq,
             referenceNo: referenceNo || null,
+            recordedBy: req.user?.name || req.user?.email || 'System',
             notes: 'Immediate payment at wholesale bill creation',
           },
         });
       }
 
-      // 3. Update Customer Outstanding Balance
-      const newBalance = customer.outstandingBalance + newCreditAmount;
+      // 3. Update Customer Outstanding Balance in 24K Gold Grams
+      const newCustomerGoldBalance = roundGoldGrams(customer.outstandingGoldGrams + newCreditGoldEq, 4);
+      const newCustomerInrBalance = roundCurrency(newCustomerGoldBalance * activeRate);
+
       await tx.wholesaleCustomer.update({
         where: { id: customer.id },
-        data: { outstandingBalance: newBalance },
+        data: {
+          outstandingGoldGrams: newCustomerGoldBalance,
+          outstandingBalance: newCustomerInrBalance,
+        },
       });
 
-      // 4. Update Ledger (Debit for Invoice)
+      // 4. Update Ledger in 24K Gold Grams & INR
       await tx.wholesaleLedger.create({
         data: {
           customerId: customer.id,
           transactionType: 'INVOICE',
           invoiceId: invoice.id,
           debit: grandTotal,
-          credit: paidNow,
-          balance: newBalance,
-          notes: `Wholesale Bill #${invoiceNumber}`,
+          credit: roundCurrency(paidNow),
+          balance: newCustomerInrBalance,
+          debitGoldGrams: invoiceGoldEquivalent,
+          creditGoldGrams: paidNowGoldEq,
+          balanceGoldGrams: newCustomerGoldBalance,
+          rate24K: activeRate,
+          recordedBy: req.user?.name || req.user?.email || 'System',
+          notes: `Wholesale Bill #${invoiceNumber} (${invoiceGoldEquivalent.toFixed(4)} g 24K @ ₹${activeRate}/g)`,
         },
       });
 
@@ -456,7 +549,7 @@ router.get(
 );
 
 // ============================================================
-// WHOLESALE PAYMENTS & LEDGER
+// WHOLESALE PAYMENTS & LEDGER SETTLEMENT
 // ============================================================
 
 // POST /api/wholesale/payments
@@ -464,64 +557,124 @@ router.post(
   '/payments',
   authorize('SUPER_ADMIN', 'MANAGER', 'WHOLESALE_MANAGER', 'BILLING_STAFF'),
   catchAsync(async (req: AuthenticatedRequest, res: Response) => {
-    const { customerId, invoiceId, amount, paymentMethod, referenceNo, paymentDate, notes } = req.body;
+    const {
+      customerId,
+      invoiceId,
+      paymentType: rawPaymentType = 'CASH',
+      paymentMethod = 'BANK_TRANSFER',
+      goldWeightGrams: rawGoldWeight,
+      goldPurity: rawGoldPurity,
+      cashAmount: rawCashAmount,
+      referenceNo,
+      paymentDate,
+      notes,
+      authorizeOverpayment,
+    } = req.body;
 
-    if (!customerId || !amount || parseFloat(amount) <= 0) {
-      throw new AppError('Customer ID and positive payment amount are required.', 400);
+    if (!customerId) {
+      throw new AppError('Customer ID is required.', 400);
     }
 
-    const payAmount = parseFloat(amount);
     const customer = await prisma.wholesaleCustomer.findUnique({ where: { id: customerId } });
     if (!customer) {
       throw new AppError('Wholesale customer not found.', 404);
     }
+
+    const activeRate = await getActive24KGoldRate();
+    const paymentType = (rawPaymentType || 'CASH').toUpperCase();
+
+    const settlement = calculateMixedSettlement({
+      goldWeightGrams: paymentType === 'CASH' ? 0 : parseFloat(rawGoldWeight) || 0,
+      goldPurity: paymentType === 'CASH' ? '24K' : rawGoldPurity || '24K',
+      cashAmount: paymentType === 'GOLD' ? 0 : parseFloat(rawCashAmount) || 0,
+      rate24K: activeRate,
+    });
+
+    if (settlement.totalEquivalent24KGrams <= 0) {
+      throw new AppError('Payment must include either valid gold weight or cash amount.', 400);
+    }
+
+    // Overpayment Protection: Check if settlement exceeds current gold outstanding
+    const diff = roundGoldGrams(settlement.totalEquivalent24KGrams - customer.outstandingGoldGrams, 4);
+
+    if (diff > 0.0001 && !authorizeOverpayment) {
+      throw new AppError(
+        `PAYMENT_EXCEEDS_OUTSTANDING: Settlement of ${settlement.totalEquivalent24KGrams.toFixed(4)} g 24K exceeds current outstanding balance of ${customer.outstandingGoldGrams.toFixed(4)} g 24K (Excess: ${diff.toFixed(4)} g 24K). Please adjust payment weight/cash or check 'Authorize Overpayment' to record as a Gold Advance.`,
+        400
+      );
+    }
+
+    const totalAmountInr = roundCurrency(settlement.goldValueInr + settlement.cashAmount);
 
     const result = await prisma.$transaction(async (tx) => {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const count = await tx.wholesalePayment.count();
       const paymentNumber = `WHS-PAY-${dateStr}-${(count + 1).toString().padStart(4, '0')}`;
 
-      // 1. Create Payment
+      // 1. Create Payment Record with Gold & Cash Breakdown Snapshots
       const payment = await tx.wholesalePayment.create({
         data: {
           paymentNumber,
           customerId,
           invoiceId: invoiceId || null,
-          amount: payAmount,
-          paymentMethod: paymentMethod || 'BANK_TRANSFER',
+          amount: totalAmountInr,
+          paymentType,
+          paymentMethod: paymentType === 'GOLD' ? 'GOLD' : paymentMethod || 'CASH',
+          rate24K: activeRate,
+          goldPurity: settlement.goldPurity,
+          goldWeightGrams: settlement.goldWeightGrams,
+          goldEquivalent24KGrams: settlement.goldEquivalent24KGrams,
+          cashAmount: settlement.cashAmount,
+          cashEquivalent24KGrams: settlement.cashEquivalent24KGrams,
+          totalEquivalent24KGrams: settlement.totalEquivalent24KGrams,
           referenceNo: referenceNo || null,
           paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
+          recordedBy: req.user?.name || req.user?.email || 'Staff',
           notes: notes || null,
         },
       });
 
-      // 2. If tied to invoice, update invoice outstanding
+      // 2. If tied to invoice, update invoice outstanding INR
       if (invoiceId) {
         const inv = await tx.wholesaleInvoice.findUnique({ where: { id: invoiceId } });
         if (inv) {
-          const newPaid = inv.amountPaid + payAmount;
+          const newPaid = inv.amountPaid + totalAmountInr;
           const newOutstanding = Math.max(0, inv.grandTotal - newPaid);
           const newStatus = newOutstanding <= 0 ? 'PAID' : 'PARTIAL';
 
           await tx.wholesaleInvoice.update({
             where: { id: invoiceId },
             data: {
-              amountPaid: newPaid,
-              outstandingAmount: newOutstanding,
+              amountPaid: roundCurrency(newPaid),
+              outstandingAmount: roundCurrency(newOutstanding),
               paymentStatus: newStatus,
             },
           });
         }
       }
 
-      // 3. Update Customer Outstanding Balance
-      const newCustomerOutstanding = Math.max(0, customer.outstandingBalance - payAmount);
+      // 3. Update Customer Outstanding Balance in 24K Gold Grams & INR
+      const newCustomerGoldOutstanding = roundGoldGrams(customer.outstandingGoldGrams - settlement.totalEquivalent24KGrams, 4);
+      const newCustomerInrOutstanding = roundCurrency(newCustomerGoldOutstanding * activeRate);
+
       await tx.wholesaleCustomer.update({
         where: { id: customerId },
-        data: { outstandingBalance: newCustomerOutstanding },
+        data: {
+          outstandingGoldGrams: newCustomerGoldOutstanding,
+          outstandingBalance: newCustomerInrOutstanding,
+        },
       });
 
-      // 4. Update Ledger (Credit for Payment)
+      // 4. Update Ledger in 24K Gold Grams
+      let ledgerNote = `Payment #${paymentNumber} (${paymentType})`;
+      if (paymentType === 'GOLD') {
+        ledgerNote += `: ${settlement.goldWeightGrams}g ${settlement.goldPurity} Gold (${settlement.goldEquivalent24KGrams.toFixed(4)}g 24K eq)`;
+      } else if (paymentType === 'CASH') {
+        ledgerNote += `: ₹${settlement.cashAmount.toLocaleString('en-IN')} Cash (${settlement.cashEquivalent24KGrams.toFixed(4)}g 24K eq @ ₹${activeRate}/g)`;
+      } else {
+        ledgerNote += `: ${settlement.goldWeightGrams}g ${settlement.goldPurity} Gold + ₹${settlement.cashAmount.toLocaleString('en-IN')} Cash (Total ${settlement.totalEquivalent24KGrams.toFixed(4)}g 24K eq)`;
+      }
+
       await tx.wholesaleLedger.create({
         data: {
           customerId,
@@ -529,9 +682,17 @@ router.post(
           paymentId: payment.id,
           invoiceId: invoiceId || null,
           debit: 0.0,
-          credit: payAmount,
-          balance: newCustomerOutstanding,
-          notes: `Payment #${paymentNumber} (${paymentMethod})`,
+          credit: totalAmountInr,
+          balance: newCustomerInrOutstanding,
+          debitGoldGrams: 0.0,
+          creditGoldGrams: settlement.totalEquivalent24KGrams,
+          balanceGoldGrams: newCustomerGoldOutstanding,
+          rate24K: activeRate,
+          goldPurity: settlement.goldPurity,
+          goldWeightGrams: settlement.goldWeightGrams,
+          cashAmount: settlement.cashAmount,
+          recordedBy: req.user?.name || req.user?.email || 'Staff',
+          notes: ledgerNote,
         },
       });
 
@@ -544,10 +705,45 @@ router.post(
       action: 'WHOLESALE_PAYMENT_RECORDED',
       entity: 'WholesalePayment',
       entityId: result.id,
-      newValue: `Amount: ₹${payAmount}, Customer: ${customer.businessName}`,
+      newValue: `Payment #${result.paymentNumber} Type: ${paymentType}, Total 24K Eq: ${settlement.totalEquivalent24KGrams}g, Customer: ${customer.businessName}`,
     });
 
-    res.status(201).json({ success: true, data: result, message: 'Payment recorded successfully.' });
+    res.status(201).json({
+      success: true,
+      data: result,
+      settlement,
+      message: 'Wholesale payment recorded successfully.',
+    });
+  })
+);
+
+// GET /api/wholesale/payments (List Payment History)
+router.get(
+  '/payments',
+  authorize('SUPER_ADMIN', 'MANAGER', 'WHOLESALE_MANAGER', 'BILLING_STAFF'),
+  catchAsync(async (req: Request, res: Response) => {
+    const activeRate = await getActive24KGoldRate();
+
+    const payments = await prisma.wholesalePayment.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            businessName: true,
+            contactPerson: true,
+            mobile: true,
+            photoUrl: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      activeRate24K: activeRate,
+      data: payments,
+    });
   })
 );
 
@@ -557,6 +753,8 @@ router.get(
   authorize('SUPER_ADMIN', 'MANAGER', 'WHOLESALE_MANAGER', 'BILLING_STAFF'),
   catchAsync(async (req: Request, res: Response) => {
     const { customerId } = req.params;
+    const activeRate = await getActive24KGoldRate();
+
     const customer = await prisma.wholesaleCustomer.findUnique({ where: { id: customerId } });
 
     if (!customer) {
@@ -570,8 +768,9 @@ router.get(
 
     res.status(200).json({
       success: true,
+      activeRate24K: activeRate,
       data: {
-        customer,
+        customer: enrichCustomer(customer, activeRate),
         ledgers,
       },
     });
@@ -583,6 +782,8 @@ router.get(
   '/receivables',
   authorize('SUPER_ADMIN', 'MANAGER', 'WHOLESALE_MANAGER', 'BILLING_STAFF'),
   catchAsync(async (req: Request, res: Response) => {
+    const activeRate = await getActive24KGoldRate();
+
     const customers = await prisma.wholesaleCustomer.findMany({
       where: { status: 'ACTIVE' },
       include: {
@@ -594,8 +795,9 @@ router.get(
 
     let totalWholesaleSales = 0;
     let totalCollected = 0;
-    let totalOutstanding = 0;
-    let totalOverdue = 0;
+    let totalOutstandingInr = 0;
+    let totalOutstandingGoldGrams = 0;
+    let totalOverdueInr = 0;
 
     const now = new Date();
 
@@ -606,17 +808,19 @@ router.get(
       let d61_90 = 0;
       let d90_plus = 0;
 
+      totalOutstandingGoldGrams += c.outstandingGoldGrams;
+
       for (const inv of c.invoices) {
         totalWholesaleSales += inv.grandTotal;
         totalCollected += inv.amountPaid;
-        totalOutstanding += inv.outstandingAmount;
+        totalOutstandingInr += inv.outstandingAmount;
 
         const diffTime = Math.abs(now.getTime() - new Date(inv.dueDate).getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const isOverdue = now > new Date(inv.dueDate);
 
         if (isOverdue) {
-          totalOverdue += inv.outstandingAmount;
+          totalOverdueInr += inv.outstandingAmount;
           if (diffDays <= 30) d1_30 += inv.outstandingAmount;
           else if (diffDays <= 60) d31_60 += inv.outstandingAmount;
           else if (diffDays <= 90) d61_90 += inv.outstandingAmount;
@@ -626,11 +830,22 @@ router.get(
         }
       }
 
+      const creditLimitGoldGrams = roundGoldGrams(c.creditLimitGoldGrams || 0, 4);
+      const outstandingGoldGrams = roundGoldGrams(c.outstandingGoldGrams || 0, 4);
+      const availableCreditGoldGrams = roundGoldGrams(Math.max(0, creditLimitGoldGrams - outstandingGoldGrams), 4);
+
       return {
         id: c.id,
         businessName: c.businessName,
         contactPerson: c.contactPerson,
         mobile: c.mobile,
+        photoUrl: c.photoUrl,
+        creditLimitGoldGrams,
+        outstandingGoldGrams,
+        availableCreditGoldGrams,
+        currentCreditLimitInr: roundCurrency(creditLimitGoldGrams * activeRate),
+        currentOutstandingInr: roundCurrency(outstandingGoldGrams * activeRate),
+        currentAvailableCreditInr: roundCurrency(availableCreditGoldGrams * activeRate),
         creditLimit: c.creditLimit,
         outstandingBalance: c.outstandingBalance,
         aging: {
@@ -646,11 +861,13 @@ router.get(
 
     res.status(200).json({
       success: true,
+      activeRate24K: activeRate,
       data: {
-        totalWholesaleSales,
-        totalCollected,
-        totalOutstanding,
-        totalOverdue,
+        totalWholesaleSales: roundCurrency(totalWholesaleSales),
+        totalCollected: roundCurrency(totalCollected),
+        totalOutstandingInr: roundCurrency(totalOutstandingInr),
+        totalOutstandingGoldGrams: roundGoldGrams(totalOutstandingGoldGrams, 4),
+        totalOverdueInr: roundCurrency(totalOverdueInr),
         activeCustomersCount: customers.length,
         customers: customerAgingList,
       },

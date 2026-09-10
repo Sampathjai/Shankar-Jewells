@@ -622,29 +622,31 @@ model WishlistItem {
 // ============================================================
 
 model WholesaleCustomer {
-  id                 String   @id @default(uuid())
-  businessName       String
-  contactPerson      String?
-  mobile             String   @unique
-  whatsapp           String?
-  email              String?
-  address            String?
-  city               String?
-  state              String?
-  gstin              String?
-  gstRegistered      Boolean  @default(false)
-  pan                String?
-  creditLimit        Float    @default(0.0)
-  outstandingBalance Float    @default(0.0)
-  paymentTerms       String   @default("30 Days")
-  dueDays            Int      @default(30)
-  discountRules      String?
-  notes              String?
-  photoUrl           String?
-  photoStorageKey    String?
-  status             String   @default("ACTIVE") // ACTIVE, ON_HOLD, BLOCKED, INACTIVE
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                     String   @id @default(uuid())
+  businessName           String
+  contactPerson          String?
+  mobile                 String   @unique
+  whatsapp               String?
+  email                  String?
+  address                String?
+  city                   String?
+  state                  String?
+  gstin                  String?
+  gstRegistered          Boolean  @default(false)
+  pan                    String?
+  creditLimit            Float    @default(0.0)
+  creditLimitGoldGrams   Float    @default(0.0)
+  outstandingBalance     Float    @default(0.0)
+  outstandingGoldGrams   Float    @default(0.0)
+  paymentTerms           String   @default("30 Days")
+  dueDays                Int      @default(30)
+  discountRules          String?
+  notes                  String?
+  photoUrl               String?
+  photoStorageKey        String?
+  status                 String   @default("ACTIVE") // ACTIVE, ON_HOLD, BLOCKED, INACTIVE
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   invoices WholesaleInvoice[]
   payments WholesalePayment[]
@@ -669,6 +671,8 @@ model WholesaleInvoice {
   grandTotal          Float
   amountPaid          Float    @default(0.0)
   outstandingAmount   Float
+  rate24K             Float    @default(0.0)
+  goldEquivalentGrams Float    @default(0.0)
   creditOverrideBy    String?
   creditOverrideNotes String?
   notes               String?
@@ -697,18 +701,27 @@ model WholesaleInvoiceItem {
 }
 
 model WholesalePayment {
-  id            String            @id @default(uuid())
-  paymentNumber String            @unique
-  customerId    String
-  customer      WholesaleCustomer @relation(fields: [customerId], references: [id])
-  invoiceId     String?
-  invoice       WholesaleInvoice? @relation(fields: [invoiceId], references: [id])
-  amount        Float
-  paymentMethod String            @default("BANK_TRANSFER") // CASH, UPI, BANK_TRANSFER, CHEQUE, OTHER
-  referenceNo   String?
-  paymentDate   DateTime          @default(now())
-  notes         String?
-  createdAt     DateTime          @default(now())
+  id                      String            @id @default(uuid())
+  paymentNumber           String            @unique
+  customerId              String
+  customer                WholesaleCustomer @relation(fields: [customerId], references: [id])
+  invoiceId               String?
+  invoice                 WholesaleInvoice? @relation(fields: [invoiceId], references: [id])
+  amount                  Float
+  paymentType             String            @default("CASH") // GOLD, CASH, MIXED
+  paymentMethod           String            @default("BANK_TRANSFER") // CASH, UPI, BANK_TRANSFER, CHEQUE, GOLD, OTHER
+  rate24K                 Float             @default(0.0)
+  goldPurity              String?
+  goldWeightGrams         Float             @default(0.0)
+  goldEquivalent24KGrams  Float             @default(0.0)
+  cashAmount              Float             @default(0.0)
+  cashEquivalent24KGrams  Float             @default(0.0)
+  totalEquivalent24KGrams Float             @default(0.0)
+  referenceNo             String?
+  paymentDate             DateTime          @default(now())
+  recordedBy              String?
+  notes                   String?
+  createdAt               DateTime          @default(now())
 }
 
 model WholesaleLedger {
@@ -721,6 +734,14 @@ model WholesaleLedger {
   debit           Float             @default(0.0)
   credit          Float             @default(0.0)
   balance         Float
+  debitGoldGrams  Float             @default(0.0)
+  creditGoldGrams Float             @default(0.0)
+  balanceGoldGrams Float            @default(0.0)
+  rate24K         Float?
+  goldPurity      String?
+  goldWeightGrams Float?
+  cashAmount      Float?
+  recordedBy      String?
   notes           String?
   createdAt       DateTime          @default(now())
 }

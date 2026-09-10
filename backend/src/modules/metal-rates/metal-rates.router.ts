@@ -6,6 +6,18 @@ import { recordAuditLog } from '../../middleware/audit.js';
 
 const router = Router();
 
+export async function getActive24KGoldRate(): Promise<number> {
+  const rateRecord = await prisma.metalRate.findFirst({
+    where: {
+      metalType: 'GOLD',
+      purity: { in: ['K24', '24K', '999'] },
+      effectiveTo: null,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rateRecord ? rateRecord.ratePerGram : 6830;
+}
+
 // GET /api/metal-rates/current
 router.get(
   '/current',

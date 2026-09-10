@@ -35,6 +35,7 @@ import { AdminAuditLogsPage } from './pages/admin/AdminAuditLogsPage';
 import { AdminWholesaleBillingPage } from './pages/admin/wholesale/AdminWholesaleBillingPage';
 import { AdminWholesaleCustomersPage } from './pages/admin/wholesale/AdminWholesaleCustomersPage';
 import { AdminWholesalePaymentsPage } from './pages/admin/wholesale/AdminWholesalePaymentsPage';
+import { AdminWholesalePaymentPage } from './pages/admin/wholesale/AdminWholesalePaymentPage';
 import { AdminWholesaleReceivablesPage } from './pages/admin/wholesale/AdminWholesaleReceivablesPage';
 import { AdminWholesaleLedgerPage } from './pages/admin/wholesale/AdminWholesaleLedgerPage';
 
@@ -128,6 +129,7 @@ export const App: React.FC = () => {
             <Route path="/admin/wholesale/billing" element={<AdminWholesaleBillingPage />} />
             <Route path="/admin/wholesale/customers" element={<AdminWholesaleCustomersPage />} />
             <Route path="/admin/wholesale/payments" element={<AdminWholesalePaymentsPage />} />
+            <Route path="/admin/wholesale/payment" element={<AdminWholesalePaymentPage />} />
             <Route path="/admin/wholesale/receivables" element={<AdminWholesaleReceivablesPage />} />
             <Route path="/admin/wholesale/ledger/:customerId" element={<AdminWholesaleLedgerPage />} />
 
