@@ -8,16 +8,16 @@ export default {
     extend: {
       colors: {
         luxury: {
-          ivory: '#FDFBF7',
-          charcoal: '#18181B',
+          ivory: '#FBF9F5',
+          charcoal: '#1D1B19',
           gold: {
-            DEFAULT: '#C5A059',
-            light: '#E2C889',
-            dark: '#9A7730',
+            DEFAULT: '#B9913F',
+            light: '#D4AF57',
+            dark: '#8C6921',
           },
           beige: '#F5F0EB',
-          gray: '#71717A',
-          border: '#E4E4E7',
+          gray: '#6B655F',
+          border: '#E8E1D6',
           card: '#FFFFFF',
         },
       },

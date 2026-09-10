@@ -49,7 +49,6 @@ router.post(
       'BILLING_STAFF',
       'INVENTORY_STAFF',
       'WHOLESALE_MANAGER',
-      'CONSIGNMENT_MANAGER',
       'DESIGNER',
     ];
 

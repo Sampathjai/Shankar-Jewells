@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { CartDrawer } from './components/layout/CartDrawer';
@@ -33,12 +33,6 @@ import { AdminWholesaleCustomersPage } from './pages/admin/wholesale/AdminWholes
 import { AdminWholesalePaymentsPage } from './pages/admin/wholesale/AdminWholesalePaymentsPage';
 import { AdminWholesaleReceivablesPage } from './pages/admin/wholesale/AdminWholesaleReceivablesPage';
 import { AdminWholesaleLedgerPage } from './pages/admin/wholesale/AdminWholesaleLedgerPage';
-
-// Consignment Modules
-import { AdminConsignmentPage } from './pages/admin/consignment/AdminConsignmentPage';
-import { AdminConsignmentPartnersPage } from './pages/admin/consignment/AdminConsignmentPartnersPage';
-import { AdminConsignmentIssuePage } from './pages/admin/consignment/AdminConsignmentIssuePage';
-import { AdminConsignmentSettlementPage } from './pages/admin/consignment/AdminConsignmentSettlementPage';
 
 // User Management Module
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
@@ -112,12 +106,8 @@ export const App: React.FC = () => {
           <Route path="/admin/wholesale/receivables" element={<AdminWholesaleReceivablesPage />} />
           <Route path="/admin/wholesale/ledger/:customerId" element={<AdminWholesaleLedgerPage />} />
 
-          {/* Consignment Bulk Stock Routes */}
-          <Route path="/admin/consignment" element={<AdminConsignmentPage />} />
-          <Route path="/admin/consignment/partners" element={<AdminConsignmentPartnersPage />} />
-          <Route path="/admin/consignment/issue" element={<AdminConsignmentIssuePage />} />
-          <Route path="/admin/consignment/settlements" element={<AdminConsignmentSettlementPage />} />
-          <Route path="/admin/consignment/stock" element={<AdminConsignmentPage />} />
+          {/* Safe Fallback Redirect for Legacy Consignment Links */}
+          <Route path="/admin/consignment/*" element={<Navigate to="/admin" replace />} />
 
           {/* User Management Route */}
           <Route path="/admin/users" element={<AdminUsersPage />} />

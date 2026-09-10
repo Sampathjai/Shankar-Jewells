@@ -3,21 +3,15 @@ import { Link } from 'react-router-dom';
 import { fetchApi } from '../../api/client';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
-  TrendingUp,
   Receipt,
   Building2,
-  Truck,
   Vault,
   Package,
   AlertTriangle,
   Plus,
-  ArrowUpRight,
-  ShieldCheck,
   Sparkles,
-  Users,
-  CreditCard,
-  DollarSign,
   Gem,
+  Coins,
 } from 'lucide-react';
 
 export const AdminDashboardPage: React.FC = () => {
@@ -28,7 +22,6 @@ export const AdminDashboardPage: React.FC = () => {
   // Summary Metrics State
   const [inventoryValuation, setInventoryValuation] = useState<any>(null);
   const [wholesaleReceivables, setWholesaleReceivables] = useState<any>(null);
-  const [consignmentStock, setConsignmentStock] = useState<any[]>([]);
   const [customRequestsCount, setCustomRequestsCount] = useState(0);
 
   useEffect(() => {
@@ -45,9 +38,6 @@ export const AdminDashboardPage: React.FC = () => {
         const whsRes = await fetchApi<{ success: boolean; data: any }>('/wholesale/receivables');
         setWholesaleReceivables(whsRes.data);
 
-        const csgRes = await fetchApi<{ success: boolean; data: any[] }>('/consignment/stock');
-        setConsignmentStock(csgRes.data || []);
-
         const custRes = await fetchApi<{ success: boolean; data: any[] }>('/custom-requests');
         setCustomRequestsCount(custRes.data?.filter((r: any) => r.status === 'NEW').length || 0);
       } catch (err) {
@@ -62,246 +52,243 @@ export const AdminDashboardPage: React.FC = () => {
   const gold22k = metalRates.find((r) => r.metalType === 'GOLD' && r.purity === 'K22')?.ratePerGram || 6830;
   const silver925 = metalRates.find((r) => r.metalType === 'SILVER' && r.purity === 'SILVER_925')?.ratePerGram || 88;
 
-  const totalConsignmentUnits = consignmentStock.reduce((sum, item) => sum + item.quantity, 0);
-  const totalConsignmentWeight = consignmentStock.reduce((sum, item) => sum + item.netWeight, 0);
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-[600px]">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 border-4 border-luxury-gold border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs font-semibold text-luxury-gray uppercase tracking-widest">Loading Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-8 space-y-8">
-      {/* Header with Live Ticker */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-luxury-gold/20 pb-6">
+    <div className="p-8 space-y-8 bg-luxury-ivory min-h-screen">
+      {/* Header with Live Metal Rates Ticker */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-luxury-border pb-6">
         <div>
           <div className="flex items-center gap-2 text-luxury-gold text-xs font-bold uppercase tracking-widest">
-            <Gem className="w-4 h-4" /> Shanker Jewells ERP • Trichy
+            <Gem className="w-4 h-4 text-luxury-gold" /> Shanker Jewells ERP • Trichy
           </div>
-          <h1 className="font-serif text-3xl font-bold text-white mt-1">
+          <h1 className="font-serif text-3xl font-bold text-luxury-charcoal mt-1">
             Good Morning, {user?.name || 'Manager'}
           </h1>
-          <p className="text-xs text-luxury-ivory/60 mt-0.5">
+          <p className="text-xs text-luxury-gray mt-0.5">
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
 
         {/* Live Metal Rates Ticker */}
-        <div className="flex items-center gap-4 bg-luxury-charcoal/80 p-3.5 rounded-2xl border border-luxury-gold/30 shadow-2xl backdrop-blur-md">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-xs border border-amber-500/30">
+        <div className="flex items-center gap-5 bg-white p-4 rounded-2xl border border-luxury-border shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs border border-amber-200">
               Au
             </div>
             <div>
-              <div className="text-[10px] text-luxury-ivory/50 uppercase font-semibold">Live Gold 22K</div>
-              <div className="text-sm font-bold text-amber-400 font-mono">₹{gold22k}/g</div>
+              <div className="text-[10px] text-luxury-gray uppercase font-semibold">Live Gold 22K</div>
+              <div className="text-sm font-bold text-luxury-charcoal font-mono">₹{gold22k.toLocaleString('en-IN')}/g</div>
             </div>
           </div>
 
-          <div className="h-8 w-px bg-luxury-gold/20" />
+          <div className="h-8 w-px bg-luxury-border" />
 
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-slate-400/20 text-slate-200 flex items-center justify-center font-bold text-xs border border-slate-400/30">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs border border-slate-200">
               Ag
             </div>
             <div>
-              <div className="text-[10px] text-luxury-ivory/50 uppercase font-semibold">Live Silver 925</div>
-              <div className="text-sm font-bold text-slate-200 font-mono">₹{silver925}/g</div>
+              <div className="text-[10px] text-luxury-gray uppercase font-semibold">Live Silver 925</div>
+              <div className="text-sm font-bold text-luxury-charcoal font-mono">₹{silver925.toLocaleString('en-IN')}/g</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Actions Panel */}
+      {/* Quick Operations Panel */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs text-luxury-gold font-bold uppercase tracking-wider mr-2">Quick Operations:</span>
+        <span className="text-xs text-luxury-gray font-bold uppercase tracking-wider mr-2">Quick Operations:</span>
         <Link
           to="/admin/billing"
-          className="flex items-center gap-2 px-4 py-2 bg-luxury-gold hover:bg-luxury-goldHover text-luxury-charcoal font-bold rounded-xl text-xs shadow-luxury transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 bg-luxury-gold hover:bg-luxury-gold/90 text-white font-bold rounded-xl text-xs shadow-sm transition-all"
         >
           <Plus className="w-4 h-4" /> Retail POS Bill
         </Link>
         <Link
           to="/admin/wholesale"
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs transition-all border border-luxury-gold/30"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-luxury-ivory text-luxury-charcoal font-bold rounded-xl text-xs border border-luxury-border shadow-sm transition-all"
         >
           <Building2 className="w-4 h-4 text-luxury-gold" /> Wholesale Credit Bill
         </Link>
         <Link
-          to="/admin/consignment/issue"
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs transition-all border border-luxury-gold/30"
+          to="/admin/inventory"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-luxury-ivory text-luxury-charcoal font-bold rounded-xl text-xs border border-luxury-border shadow-sm transition-all"
         >
-          <Truck className="w-4 h-4 text-luxury-gold" /> Consignment Stock Issue
+          <Vault className="w-4 h-4 text-luxury-gold" /> Vault Inventory
         </Link>
         <Link
-          to="/admin/inventory"
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs transition-all border border-luxury-gold/30"
+          to="/admin/custom-requests"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-luxury-ivory text-luxury-charcoal font-bold rounded-xl text-xs border border-luxury-border shadow-sm transition-all"
         >
-          <Vault className="w-4 h-4 text-luxury-gold" /> Add Vault Inventory
+          <Sparkles className="w-4 h-4 text-luxury-gold" /> Custom Requests
         </Link>
       </div>
 
-      {/* Primary KPI Grid (8 Cards) */}
+      {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Card 1: Vault Gold Reserve */}
-        <div className="bg-luxury-charcoal/60 border border-luxury-gold/20 rounded-2xl p-5 backdrop-blur-md space-y-2 relative overflow-hidden">
+        {/* Card 1: Vault Gold Stock */}
+        <div className="bg-white border border-luxury-border rounded-2xl p-6 shadow-card space-y-2">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-luxury-gold uppercase font-bold tracking-wider">Vault Gold Stock</span>
-            <Vault className="w-5 h-5 text-luxury-gold" />
+            <span className="text-[10px] text-luxury-gray uppercase font-bold tracking-wider">Vault Gold Stock</span>
+            <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+              <Coins className="w-5 h-5" />
+            </div>
           </div>
-          <div className="text-2xl font-serif font-bold text-white">
+          <div className="text-2xl font-serif font-bold text-luxury-charcoal">
             {inventoryValuation?.totalNetWeight ? `${inventoryValuation.totalNetWeight.toFixed(1)}g` : '0g'}
           </div>
-          <div className="text-[11px] text-amber-300 font-medium">
+          <div className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md inline-block">
             Valuation: ₹{(inventoryValuation?.goldStockValue || 0).toLocaleString('en-IN')}
           </div>
         </div>
 
-        {/* Card 2: Vault Silver Reserve */}
-        <div className="bg-luxury-charcoal/60 border border-luxury-gold/20 rounded-2xl p-5 backdrop-blur-md space-y-2 relative overflow-hidden">
+        {/* Card 2: Vault Silver Stock */}
+        <div className="bg-white border border-luxury-border rounded-2xl p-6 shadow-card space-y-2">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-slate-300 uppercase font-bold tracking-wider">Vault Silver Reserve</span>
-            <Package className="w-5 h-5 text-slate-300" />
+            <span className="text-[10px] text-luxury-gray uppercase font-bold tracking-wider">Vault Silver Reserve</span>
+            <div className="p-2 rounded-xl bg-slate-100 text-slate-600">
+              <Package className="w-5 h-5" />
+            </div>
           </div>
-          <div className="text-2xl font-serif font-bold text-white">
+          <div className="text-2xl font-serif font-bold text-luxury-charcoal">
             {inventoryValuation?.totalProducts ? `${inventoryValuation.totalProducts} Items` : '0 Items'}
           </div>
-          <div className="text-[11px] text-slate-300 font-medium">
+          <div className="text-[11px] text-slate-700 font-semibold bg-slate-100 px-2 py-0.5 rounded-md inline-block">
             Valuation: ₹{(inventoryValuation?.silverStockValue || 0).toLocaleString('en-IN')}
           </div>
         </div>
 
-        {/* Card 3: Wholesale Outstanding */}
-        <div className="bg-luxury-charcoal/60 border border-amber-500/30 rounded-2xl p-5 backdrop-blur-md space-y-2 relative overflow-hidden">
+        {/* Card 3: Wholesale Receivables */}
+        <div className="bg-white border border-luxury-border rounded-2xl p-6 shadow-card space-y-2">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-amber-400 uppercase font-bold tracking-wider">Wholesale Receivables</span>
-            <Building2 className="w-5 h-5 text-amber-400" />
+            <span className="text-[10px] text-luxury-gray uppercase font-bold tracking-wider">Wholesale Receivables</span>
+            <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
+              <Building2 className="w-5 h-5" />
+            </div>
           </div>
-          <div className="text-2xl font-serif font-bold text-amber-400">
+          <div className="text-2xl font-serif font-bold text-amber-700">
             ₹{(wholesaleReceivables?.totalOutstanding || 0).toLocaleString('en-IN')}
           </div>
-          <div className="text-[11px] text-rose-400 font-semibold">
-            Overdue Dues: ₹{(wholesaleReceivables?.totalOverdue || 0).toLocaleString('en-IN')}
+          <div className="text-[11px] text-rose-700 font-semibold bg-rose-50 px-2 py-0.5 rounded-md inline-block">
+            Overdue: ₹{(wholesaleReceivables?.totalOverdue || 0).toLocaleString('en-IN')}
           </div>
         </div>
 
-        {/* Card 4: Consignment Stock */}
-        <div className="bg-luxury-charcoal/60 border border-emerald-500/30 rounded-2xl p-5 backdrop-blur-md space-y-2 relative overflow-hidden">
+        {/* Card 4: Custom Orders */}
+        <div className="bg-white border border-luxury-border rounded-2xl p-6 shadow-card space-y-2">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] text-emerald-400 uppercase font-bold tracking-wider">Consignment Bulk Stock</span>
-            <Truck className="w-5 h-5 text-emerald-400" />
+            <span className="text-[10px] text-luxury-gray uppercase font-bold tracking-wider">New Custom Requests</span>
+            <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
+              <Sparkles className="w-5 h-5" />
+            </div>
           </div>
-          <div className="text-2xl font-serif font-bold text-emerald-400">
-            {totalConsignmentWeight.toFixed(1)}g Net
+          <div className="text-2xl font-serif font-bold text-luxury-charcoal">
+            {customRequestsCount} Requests
           </div>
-          <div className="text-[11px] text-emerald-300 font-medium">
-            {totalConsignmentUnits} Units Placed With Partners
+          <div className="text-[11px] text-purple-700 font-semibold bg-purple-50 px-2 py-0.5 rounded-md inline-block">
+            Pending Staff Review
           </div>
         </div>
       </div>
 
-      {/* Multi-Workflow Breakdown & Alerts */}
+      {/* Business Workflows & Stock Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Workflow Summaries (7 cols) */}
+        {/* Left Column: Business Workflows (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="bg-luxury-charcoal/60 border border-luxury-gold/20 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-4">
-            <h3 className="font-serif text-sm font-bold text-luxury-gold uppercase tracking-wider flex items-center justify-between border-b border-luxury-gold/20 pb-3">
-              <span>Business Workflows Summary</span>
-              <span className="text-xs text-luxury-ivory/60">3 Independent Channels</span>
+          <div className="bg-white border border-luxury-border rounded-2xl p-6 shadow-card space-y-4">
+            <h3 className="font-serif text-base font-bold text-luxury-charcoal uppercase tracking-wider flex items-center justify-between border-b border-luxury-border pb-3">
+              <span>Business Workflows</span>
+              <span className="text-xs text-luxury-gray font-normal">2 Primary Sales Channels</span>
             </h3>
 
             <div className="space-y-4 text-xs">
               {/* Retail Channel */}
-              <div className="p-4 bg-white/5 rounded-xl border border-luxury-gold/10 flex items-center justify-between">
+              <div className="p-4 bg-luxury-ivory/60 rounded-xl border border-luxury-border flex items-center justify-between">
                 <div className="space-y-1">
-                  <div className="font-bold text-white text-sm flex items-center gap-2">
-                    <Receipt className="w-4 h-4 text-luxury-gold" /> 1. Retail Store Sales
+                  <div className="font-bold text-luxury-charcoal text-sm flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-luxury-gold" /> 1. Retail Store Sales POS
                   </div>
-                  <p className="text-[11px] text-luxury-ivory/60">
-                    In-store customer POS billing with manual product selection & A4 invoice generation
+                  <p className="text-[11px] text-luxury-gray">
+                    In-store customer billing with metal-rate calculation, GST 3%, and print receipt.
                   </p>
                 </div>
                 <Link
                   to="/admin/billing"
-                  className="px-3 py-1.5 bg-luxury-gold/20 text-luxury-gold rounded-lg font-bold hover:bg-luxury-gold hover:text-luxury-charcoal transition-all text-[11px]"
+                  className="px-4 py-2 bg-luxury-gold text-white rounded-xl font-bold hover:bg-luxury-gold/90 transition-all text-xs shrink-0"
                 >
                   Open POS
                 </Link>
               </div>
 
               {/* Wholesale Channel */}
-              <div className="p-4 bg-white/5 rounded-xl border border-luxury-gold/10 flex items-center justify-between">
+              <div className="p-4 bg-luxury-ivory/60 rounded-xl border border-luxury-border flex items-center justify-between">
                 <div className="space-y-1">
-                  <div className="font-bold text-white text-sm flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-amber-400" /> 2. Wholesale / Credit B2B
+                  <div className="font-bold text-luxury-charcoal text-sm flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-amber-600" /> 2. Wholesale / Credit B2B
                   </div>
-                  <p className="text-[11px] text-luxury-ivory/60">
-                    Jewellery supplied to retailer accounts, credit limit checking & receivables aging
+                  <p className="text-[11px] text-luxury-gray">
+                    Bulk supply to retailer accounts, credit limit checking, dues tracking, & aging.
                   </p>
                 </div>
                 <Link
                   to="/admin/wholesale"
-                  className="px-3 py-1.5 bg-amber-500/20 text-amber-300 rounded-lg font-bold hover:bg-amber-500 hover:text-luxury-charcoal transition-all text-[11px]"
+                  className="px-4 py-2 bg-white text-luxury-charcoal border border-luxury-border rounded-xl font-bold hover:bg-luxury-ivory transition-all text-xs shrink-0 shadow-sm"
                 >
                   Open Wholesale
-                </Link>
-              </div>
-
-              {/* Consignment Channel */}
-              <div className="p-4 bg-white/5 rounded-xl border border-luxury-gold/10 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="font-bold text-white text-sm flex items-center gap-2">
-                    <Truck className="w-4 h-4 text-emerald-400" /> 3. Consignment Placement
-                  </div>
-                  <p className="text-[11px] text-luxury-ivory/60">
-                    Bulk stock placement with partner stores, return restock & commission settlements
-                  </p>
-                </div>
-                <Link
-                  to="/admin/consignment/stock"
-                  className="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 rounded-lg font-bold hover:bg-emerald-500 hover:text-luxury-charcoal transition-all text-[11px]"
-                >
-                  View Consignment
                 </Link>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Inventory Alerts & Pending Custom Requests (5 cols) */}
+        {/* Right Column: Inventory Alerts (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Low Stock Alerts */}
-          <div className="bg-luxury-charcoal/60 border border-luxury-gold/20 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-4">
-            <h3 className="font-serif text-sm font-bold text-luxury-gold uppercase tracking-wider flex items-center justify-between border-b border-luxury-gold/20 pb-3">
+          <div className="bg-white border border-luxury-border rounded-2xl p-6 shadow-card space-y-4">
+            <h3 className="font-serif text-base font-bold text-luxury-charcoal uppercase tracking-wider flex items-center justify-between border-b border-luxury-border pb-3">
               <span className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400" /> Stock Level Alerts
+                <AlertTriangle className="w-4 h-4 text-amber-600" /> Stock Level Alerts
               </span>
-              <span className="text-xs text-amber-400 font-bold">
+              <span className="text-xs text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md">
                 {inventoryValuation?.lowStockCount || 0} Low Stock
               </span>
             </h3>
 
-            <div className="space-y-2 text-xs">
-              <div className="p-3 bg-white/5 rounded-xl border border-luxury-gold/10 flex items-center justify-between">
+            <div className="space-y-3 text-xs">
+              <div className="p-3.5 bg-luxury-ivory/60 rounded-xl border border-luxury-border flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-white">Out of Stock Items</div>
-                  <div className="text-[10px] text-luxury-ivory/50">Requires urgent vault replenishment</div>
+                  <div className="font-semibold text-luxury-charcoal">Out of Stock Items</div>
+                  <div className="text-[10px] text-luxury-gray">Requires urgent vault replenishment</div>
                 </div>
-                <span className="font-bold text-rose-400 font-mono text-sm">
-                  {inventoryValuation?.outOfStockCount || 0} Products
+                <span className="font-bold text-rose-600 font-mono text-sm">
+                  {inventoryValuation?.outOfStockCount || 0} Items
                 </span>
               </div>
 
-              <div className="p-3 bg-white/5 rounded-xl border border-luxury-gold/10 flex items-center justify-between">
+              <div className="p-3.5 bg-luxury-ivory/60 rounded-xl border border-luxury-border flex items-center justify-between">
                 <div>
-                  <div className="font-semibold text-white">Low Stock Threshold Alerts</div>
-                  <div className="text-[10px] text-luxury-ivory/50">Items below threshold limit</div>
+                  <div className="font-semibold text-luxury-charcoal">Low Stock Alerts</div>
+                  <div className="text-[10px] text-luxury-gray">Items below threshold limit</div>
                 </div>
-                <span className="font-bold text-amber-400 font-mono text-sm">
-                  {inventoryValuation?.lowStockCount || 0} Products
+                <span className="font-bold text-amber-600 font-mono text-sm">
+                  {inventoryValuation?.lowStockCount || 0} Items
                 </span>
               </div>
 
               <Link
                 to="/admin/inventory"
-                className="block text-center py-2 bg-white/5 hover:bg-white/10 text-luxury-gold font-bold text-xs rounded-xl transition-all border border-luxury-gold/20"
+                className="block text-center py-2.5 bg-white hover:bg-luxury-ivory text-luxury-gold font-bold text-xs rounded-xl transition-all border border-luxury-border shadow-sm"
               >
-                View Vault Inventory
+                View Vault Stock Inventory
               </Link>
             </div>
           </div>

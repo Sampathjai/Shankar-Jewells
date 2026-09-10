@@ -16,7 +16,6 @@ import inventoryRouter from './modules/inventory/inventory.router.js';
 import billingRouter from './modules/billing/billing.router.js';
 import reportsRouter from './modules/reports/reports.router.js';
 import wholesaleRouter from './modules/wholesale/wholesale.router.js';
-import consignmentRouter from './modules/consignment/consignment.router.js';
 import usersRouter from './modules/users/users.router.js';
 import uploadRouter from './modules/upload/upload.router.js';
 
@@ -83,7 +82,6 @@ app.use('/api/inventory', inventoryRouter);
 app.use('/api/billing', billingRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/wholesale', wholesaleRouter);
-app.use('/api/consignment', consignmentRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/upload', uploadRouter);
 

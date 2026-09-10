@@ -306,7 +306,6 @@ export const AdminUsersPage: React.FC = () => {
                   <option value="STORE_MANAGER">STORE_MANAGER (Store Operations)</option>
                   <option value="INVENTORY_STAFF">INVENTORY_STAFF (Vault & Catalogue)</option>
                   <option value="WHOLESALE_MANAGER">WHOLESALE_MANAGER (B2B Credit Sales)</option>
-                  <option value="CONSIGNMENT_MANAGER">CONSIGNMENT_MANAGER (Bulk Placements)</option>
                   <option value="DESIGNER">DESIGNER (Custom Requests & Quotes)</option>
                   <option value="SUPER_ADMIN">SUPER_ADMIN (Full Platform Access)</option>
                 </select>

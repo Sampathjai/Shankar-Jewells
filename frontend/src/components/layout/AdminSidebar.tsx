@@ -11,9 +11,6 @@ import {
   Package,
   FolderTree,
   Vault,
-  Truck,
-  Handshake,
-  FileCheck2,
   Sparkles,
   FileSpreadsheet,
   ShieldAlert,
@@ -36,7 +33,7 @@ interface NavGroup {
 export const AdminSidebar: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
 
   const navGroups: NavGroup[] = [
     {
@@ -45,7 +42,7 @@ export const AdminSidebar: React.FC = () => {
           label: 'Dashboard Overview',
           path: '/admin',
           icon: LayoutDashboard,
-          roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'BILLING_STAFF', 'INVENTORY_STAFF', 'WHOLESALE_MANAGER', 'CONSIGNMENT_MANAGER', 'DESIGNER'],
+          roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'BILLING_STAFF', 'INVENTORY_STAFF', 'WHOLESALE_MANAGER', 'DESIGNER'],
         },
       ],
     },
@@ -68,14 +65,6 @@ export const AdminSidebar: React.FC = () => {
       ],
     },
     {
-      groupName: 'CONSIGNMENT BULK STOCK',
-      items: [
-        { label: 'Consignment Partners', path: '/admin/consignment/partners', icon: Handshake, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'CONSIGNMENT_MANAGER'] },
-        { label: 'Consignment Stock', path: '/admin/consignment/stock', icon: Truck, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'CONSIGNMENT_MANAGER', 'INVENTORY_STAFF'] },
-        { label: 'Stock Settlements', path: '/admin/consignment/settlements', icon: FileCheck2, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'CONSIGNMENT_MANAGER'] },
-      ],
-    },
-    {
       groupName: 'CUSTOM JEWELLERY',
       items: [
         { label: 'Custom Requests', path: '/admin/custom-requests', icon: Sparkles, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'DESIGNER'] },
@@ -93,12 +82,7 @@ export const AdminSidebar: React.FC = () => {
   ];
 
   const handleExitPortal = () => {
-    const publicUrl = (import.meta as any).env?.VITE_PUBLIC_SITE_URL;
-    if (publicUrl && typeof publicUrl === 'string' && publicUrl.startsWith('http')) {
-      window.location.href = publicUrl;
-    } else {
-      navigate('/');
-    }
+    navigate('/');
   };
 
   return (

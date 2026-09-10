@@ -57,6 +57,7 @@ export interface Product {
   otherCharges: number;
   gstRate: number;
   stockQuantity: number;
+  lowStockThreshold?: number;
   certification?: string;
   hallmark: boolean;
   featured: boolean;

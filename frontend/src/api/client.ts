@@ -1,8 +1,8 @@
 export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const defaultHeaders: Record<string, string> = {};
 
-  // Set Content-Type for requests with body
-  if (options.body) {
+  // Set Content-Type for JSON requests (omit for FormData)
+  if (options.body && !(options.body instanceof FormData)) {
     defaultHeaders['Content-Type'] = 'application/json';
   }
 

@@ -7,7 +7,6 @@ import {
   Building2,
   Phone,
   ArrowLeft,
-  DollarSign,
   CheckCircle2,
 } from 'lucide-react';
 
@@ -64,131 +63,129 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
   }, [customerId]);
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-8 space-y-6 bg-luxury-ivory min-h-screen max-w-5xl mx-auto">
       {/* Back Button & Actions */}
-      <div className="flex items-center justify-between border-b border-luxury-gold/20 pb-4">
+      <div className="flex items-center justify-between border-b border-luxury-border pb-4 no-print">
         <Link
           to="/admin/wholesale/customers"
-          className="flex items-center gap-2 text-xs font-semibold text-luxury-gold hover:underline"
+          className="flex items-center gap-2 text-xs font-bold text-luxury-gold hover:underline"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Wholesale Customers
         </Link>
 
         <button
           onClick={() => window.print()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-luxury-gold text-luxury-charcoal rounded-xl text-xs font-bold shadow-luxury"
+          className="flex items-center gap-1.5 px-4 py-2 bg-luxury-gold hover:bg-luxury-gold/90 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
         >
           <Printer className="w-4 h-4" /> Print Customer Statement
         </button>
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-xs text-luxury-ivory/60">
+        <div className="text-center py-16 text-xs text-luxury-gray">
           Loading customer ledger statement...
         </div>
       ) : error ? (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl">
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl">
           {error}
         </div>
       ) : customer ? (
-        <div className="space-y-6 bg-white text-black p-8 rounded-2xl shadow-2xl print:p-0 border border-gray-200">
+        <div className="bg-white border border-luxury-border p-8 rounded-2xl shadow-card space-y-6 text-xs text-luxury-charcoal printable-area">
           {/* Statement Header */}
-          <div className="flex justify-between items-start border-b-2 border-amber-600 pb-4">
+          <div className="flex justify-between items-start border-b border-luxury-border pb-6">
             <div>
-              <h1 className="font-serif text-2xl font-bold text-amber-900">SHANKER JEWELLS</h1>
-              <p className="text-[10px] text-gray-600 uppercase tracking-widest font-semibold">
+              <h1 className="font-serif text-2xl font-bold tracking-wider text-luxury-charcoal">SHANKER JEWELLS</h1>
+              <p className="text-[10px] text-luxury-gray uppercase tracking-widest font-semibold mt-0.5">
                 WHOLESALE CUSTOMER LEDGER STATEMENT • TRICHY
               </p>
-              <p className="text-[10px] text-gray-500 mt-1">
-                No.4 Sandhukadai, Bigbazzar Street, Trichy - 620008 | Phone: +91 9443949192
-              </p>
+              <p className="text-[11px] text-luxury-gray mt-1">124 Netaji Bypass Road, Trichy - 620002 | Phone: +91 98424 12345</p>
             </div>
-            <div className="text-right">
-              <span className="px-3 py-1 bg-amber-100 text-amber-900 font-bold text-xs rounded uppercase tracking-wider">
-                STATEMENT OF ACCOUNT
+            <div className="text-right space-y-1">
+              <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-luxury-gold bg-luxury-gold/10 px-2.5 py-1 rounded border border-luxury-gold/20">
+                Official B2B Statement
               </span>
-              <div className="text-[10px] text-gray-500 mt-2">
-                As of: {new Date().toLocaleDateString('en-IN')}
-              </div>
+              <div className="text-luxury-gray text-[11px]">Statement Date: {new Date().toLocaleDateString('en-IN')}</div>
             </div>
           </div>
 
-          {/* Account Overview Card */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 text-xs">
+          {/* Account Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-luxury-ivory/60 p-4 rounded-xl border border-luxury-border">
             <div>
-              <span className="text-[10px] text-gray-500 font-bold uppercase">Business Name</span>
-              <div className="font-bold text-sm text-gray-900">{customer.businessName}</div>
-              {customer.contactPerson && <div className="text-gray-600">Contact: {customer.contactPerson}</div>}
+              <span className="text-[10px] uppercase font-bold text-luxury-gray">Account Name</span>
+              <div className="font-bold text-sm text-luxury-charcoal mt-0.5">{customer.businessName}</div>
+              <div className="text-[11px] text-luxury-gray">Contact: {customer.contactPerson || 'N/A'} ({customer.mobile})</div>
+              <div className="text-[11px] text-luxury-gray">GSTIN: {customer.gstin || 'Unregistered'}</div>
             </div>
 
             <div>
-              <span className="text-[10px] text-gray-500 font-bold uppercase">Mobile / GSTIN</span>
-              <div className="font-medium text-gray-800">{customer.mobile}</div>
-              {customer.gstin && <div className="font-mono text-[10px]">GSTIN: {customer.gstin}</div>}
-            </div>
-
-            <div>
-              <span className="text-[10px] text-gray-500 font-bold uppercase">Credit Limit</span>
-              <div className="font-bold text-sm text-gray-900">
+              <span className="text-[10px] uppercase font-bold text-luxury-gray">Approved Credit Line</span>
+              <div className="font-mono font-bold text-sm text-luxury-charcoal mt-0.5">
                 ₹{customer.creditLimit.toLocaleString('en-IN')}
               </div>
-              <div className="text-[10px] text-gray-500">Terms: {customer.paymentTerms}</div>
+              <div className="text-[11px] text-luxury-gray">Terms: {customer.paymentTerms}</div>
             </div>
 
             <div className="text-right">
-              <span className="text-[10px] text-gray-500 font-bold uppercase">Current Outstanding</span>
-              <div className="font-serif text-lg font-bold text-amber-800">
+              <span className="text-[10px] uppercase font-bold text-luxury-gray">Closing Net Balance Dues</span>
+              <div className="font-serif text-lg font-bold text-amber-700 mt-0.5">
                 ₹{customer.outstandingBalance.toLocaleString('en-IN')}
               </div>
+              <div className="text-[10px] font-bold text-emerald-700">Account Active</div>
             </div>
           </div>
 
-          {/* Ledger Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          {/* Ledger Transactions Table */}
+          <div className="space-y-2">
+            <h3 className="font-serif text-sm font-bold text-luxury-charcoal uppercase tracking-wider flex items-center gap-2">
+              <FileSpreadsheet className="w-4 h-4 text-luxury-gold" /> Transaction History & Running Balance
+            </h3>
+
+            <table className="w-full border-collapse">
               <thead>
-                <tr className="border-b-2 border-gray-300 text-[10px] uppercase text-gray-700 bg-gray-100">
+                <tr className="border-b border-luxury-border text-luxury-gray uppercase text-[10px] font-bold text-left bg-luxury-ivory/50">
                   <th className="py-2.5 px-3">Date</th>
-                  <th className="py-2.5 px-3">Transaction Type</th>
-                  <th className="py-2.5 px-3">Particulars / Ref #</th>
-                  <th className="py-2.5 px-3 text-right">Debit (₹)</th>
-                  <th className="py-2.5 px-3 text-right">Credit (₹)</th>
-                  <th className="py-2.5 px-3 text-right font-bold">Balance (₹)</th>
+                  <th className="py-2.5 px-3">Transaction Details</th>
+                  <th className="py-2.5 px-3 text-center">Type</th>
+                  <th className="py-2.5 px-3 text-right">Debit (Invoice +)</th>
+                  <th className="py-2.5 px-3 text-right">Credit (Payment -)</th>
+                  <th className="py-2.5 px-3 text-right">Running Balance (₹)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-luxury-border/60">
                 {ledgers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-8 text-gray-500">
-                      No ledger transactions recorded yet.
+                    <td colSpan={6} className="py-8 text-center text-luxury-gray">
+                      No ledger transactions recorded yet for this customer.
                     </td>
                   </tr>
                 ) : (
-                  ledgers.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="py-2.5 px-3 font-mono text-[11px]">
-                        {new Date(item.createdAt).toLocaleDateString('en-IN')}
+                  ledgers.map((l) => (
+                    <tr key={l.id} className="hover:bg-luxury-ivory/30 transition-all">
+                      <td className="py-2.5 px-3 font-mono text-luxury-gray">
+                        {new Date(l.createdAt).toLocaleDateString('en-IN')}
                       </td>
                       <td className="py-2.5 px-3">
+                        <div className="font-semibold text-luxury-charcoal">{l.notes || l.transactionType}</div>
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
                         <span
                           className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                            item.transactionType === 'INVOICE'
-                              ? 'bg-amber-100 text-amber-900'
-                              : 'bg-emerald-100 text-emerald-900'
+                            l.debit > 0
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           }`}
                         >
-                          {item.transactionType}
+                          {l.transactionType}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-gray-700">{item.notes || '-'}</td>
-                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-rose-700">
-                        {item.debit > 0 ? `₹${item.debit.toLocaleString('en-IN')}` : '-'}
+                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-amber-700">
+                        {l.debit > 0 ? `₹${l.debit.toLocaleString('en-IN')}` : '-'}
                       </td>
                       <td className="py-2.5 px-3 text-right font-mono font-semibold text-emerald-700">
-                        {item.credit > 0 ? `₹${item.credit.toLocaleString('en-IN')}` : '-'}
+                        {l.credit > 0 ? `₹${l.credit.toLocaleString('en-IN')}` : '-'}
                       </td>
-                      <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-900">
-                        ₹{item.balance.toLocaleString('en-IN')}
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-luxury-charcoal text-sm">
+                        ₹{l.balance.toLocaleString('en-IN')}
                       </td>
                     </tr>
                   ))
@@ -197,15 +194,13 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
             </table>
           </div>
 
-          {/* Statement Footer Signature */}
-          <div className="pt-8 flex justify-between items-end text-[10px] text-gray-500 border-t border-gray-200">
+          {/* Statement Footer */}
+          <div className="pt-8 border-t border-luxury-border flex justify-between items-end text-[10px] text-luxury-gray">
             <div>
-              <p className="font-bold text-gray-700">Shanker Jewells Wholesale Division</p>
-              <p>Certified statement generated directly from database ledger.</p>
+              * Computer generated B2B ledger statement. Issued by Shanker Jewells Accounts Team.
             </div>
-            <div className="text-center">
-              <div className="h-10 border-b border-gray-400 w-36 mb-1" />
-              <p className="font-bold text-gray-800">Authorized Signatory</p>
+            <div className="text-center w-48 border-t border-luxury-border pt-2 font-bold text-luxury-charcoal">
+              Authorized Accounts Signature
             </div>
           </div>
         </div>
@@ -215,4 +210,3 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
 };
 
 export default AdminWholesaleLedgerPage;
-

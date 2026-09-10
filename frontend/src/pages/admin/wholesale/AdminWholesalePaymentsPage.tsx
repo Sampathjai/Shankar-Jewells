@@ -2,13 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../../api/client';
 import {
   CreditCard,
-  Plus,
-  Search,
   Building2,
   CheckCircle2,
-  DollarSign,
-  Calendar,
-  FileText,
+  AlertCircle,
 } from 'lucide-react';
 
 interface WholesaleCustomer {
@@ -16,16 +12,6 @@ interface WholesaleCustomer {
   businessName: string;
   mobile: string;
   outstandingBalance: number;
-}
-
-interface PaymentRecord {
-  id: string;
-  paymentNumber: string;
-  amount: number;
-  paymentMethod: string;
-  referenceNo?: string;
-  paymentDate: string;
-  customer?: WholesaleCustomer;
 }
 
 export const AdminWholesalePaymentsPage: React.FC = () => {
@@ -48,7 +34,7 @@ export const AdminWholesalePaymentsPage: React.FC = () => {
       setError('');
       const res = await fetchApi<{ success: boolean; data: WholesaleCustomer[] }>('/wholesale/customers');
       if (res.success) {
-        setCustomers(res.data);
+        setCustomers(res.data || []);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load wholesale customers');
@@ -98,185 +84,138 @@ export const AdminWholesalePaymentsPage: React.FC = () => {
     }
   };
 
-  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) || null;
+  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-8 space-y-6 bg-luxury-ivory min-h-screen max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-luxury-gold/20 pb-4">
-        <div>
-          <h1 className="font-serif text-2xl text-luxury-gold font-bold flex items-center gap-3">
-            <CreditCard className="w-7 h-7 text-luxury-gold" />
-            Wholesale B2B Payment Collections
-          </h1>
-          <p className="text-xs text-luxury-ivory/60 mt-1">
-            Record customer repayments (Bank Transfer, Cheque, UPI) and automatically clear outstanding balances
-          </p>
-        </div>
+      <div className="border-b border-luxury-border pb-4">
+        <h1 className="font-serif text-2xl text-luxury-charcoal font-bold flex items-center gap-3">
+          <CreditCard className="w-7 h-7 text-luxury-gold" />
+          Record B2B Wholesale Payment Receipt
+        </h1>
+        <p className="text-xs text-luxury-gray mt-1">
+          Receive credit settlements, bank transfers, cheques, or cash payments from registered wholesale retailers.
+        </p>
       </div>
 
-      {successMsg && (
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl flex items-center gap-2 font-semibold">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          {successMsg}
-        </div>
-      )}
-
       {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl">
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Payment Entry Form (7 cols) */}
-        <div className="lg:col-span-7 bg-luxury-charcoal/60 border border-luxury-gold/20 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-4">
-          <h3 className="font-serif text-sm font-bold text-luxury-gold uppercase tracking-wider flex items-center gap-2 border-b border-luxury-gold/20 pb-3">
-            <DollarSign className="w-4 h-4" /> Record B2B Payment
-          </h3>
+      {successMsg && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+          {successMsg}
+        </div>
+      )}
 
-          <form onSubmit={handleRecordPayment} className="space-y-4 text-xs">
-            <div>
-              <label className="block text-luxury-ivory/70 font-semibold mb-1">
-                Select Wholesale Customer *
-              </label>
-              <select
-                required
-                value={selectedCustomerId}
-                onChange={(e) => setSelectedCustomerId(e.target.value)}
-                className="w-full bg-luxury-charcoal border border-luxury-gold/30 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-luxury-gold"
-              >
-                <option value="">-- Choose Wholesale Business --</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.businessName} ({c.mobile}) - Outstanding Dues: ₹{c.outstandingBalance.toLocaleString('en-IN')}
-                  </option>
-                ))}
-              </select>
-            </div>
+      {/* Payment Entry Form Card */}
+      <div className="bg-white border border-luxury-border rounded-2xl p-6 shadow-card space-y-6">
+        <h3 className="font-serif text-base font-bold text-luxury-charcoal uppercase tracking-wider flex items-center gap-2 border-b border-luxury-border pb-3">
+          <Building2 className="w-4 h-4 text-luxury-gold" /> Payment Voucher Details
+        </h3>
 
-            {selectedCustomer && (
-              <div className="p-4 bg-white/5 rounded-xl border border-luxury-gold/20 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] text-luxury-ivory/50 uppercase font-semibold">Current Outstanding Balance</span>
-                  <div className="text-lg font-serif font-bold text-amber-400">
-                    ₹{selectedCustomer.outstandingBalance.toLocaleString('en-IN')}
-                  </div>
+        <form onSubmit={handleRecordPayment} className="space-y-4 text-xs">
+          <div>
+            <label className="block text-luxury-charcoal font-bold mb-1">Select Retailer Customer *</label>
+            <select
+              value={selectedCustomerId}
+              onChange={(e) => setSelectedCustomerId(e.target.value)}
+              required
+              className="w-full bg-white border border-luxury-border rounded-xl px-4 py-3 text-luxury-charcoal font-medium focus:outline-none focus:border-luxury-gold shadow-sm"
+            >
+              <option value="">-- Choose Retailer Account --</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.businessName} ({c.mobile}) - Outstanding Dues: ₹{c.outstandingBalance.toLocaleString('en-IN')}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedCustomer && (
+            <div className="p-4 bg-luxury-ivory/60 rounded-xl border border-luxury-border flex justify-between items-center">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-luxury-gray">Current Account Outstanding</span>
+                <div className="text-xl font-serif font-bold text-amber-700 mt-0.5">
+                  ₹{selectedCustomer.outstandingBalance.toLocaleString('en-IN')}
                 </div>
-                {amount && (
-                  <div className="text-right">
-                    <span className="text-[10px] text-luxury-ivory/50 uppercase font-semibold">New Balance After Payment</span>
-                    <div className="text-sm font-bold text-emerald-400">
-                      ₹{Math.max(0, selectedCustomer.outstandingBalance - parseFloat(amount || '0')).toLocaleString('en-IN')}
-                    </div>
-                  </div>
-                )}
               </div>
-            )}
+              <span className="text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-bold border border-amber-200">
+                Credit Account Active
+              </span>
+            </div>
+          )}
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-luxury-ivory/70 font-semibold mb-1">
-                Payment Amount (₹) *
-              </label>
+              <label className="block text-luxury-charcoal font-bold mb-1">Payment Amount (₹) *</label>
               <input
                 type="number"
                 required
-                placeholder="e.g. 50000"
+                min="1"
+                step="any"
+                placeholder="50000"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-luxury-charcoal border border-luxury-gold/30 rounded-xl px-4 py-2.5 text-white text-base font-bold focus:outline-none focus:border-luxury-gold"
+                className="w-full bg-white border border-luxury-border rounded-xl px-3 py-2.5 font-mono text-sm font-bold text-emerald-700 focus:outline-none focus:border-luxury-gold shadow-sm"
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-luxury-ivory/70 font-semibold mb-1">
-                  Payment Method *
-                </label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full bg-luxury-charcoal border border-luxury-gold/30 rounded-xl px-3 py-2 text-white"
-                >
-                  <option value="BANK_TRANSFER">Bank Transfer (NEFT/RTGS/IMPS)</option>
-                  <option value="CHEQUE">Cheque Clearance</option>
-                  <option value="UPI">UPI / GPay / PhonePe</option>
-                  <option value="CASH">Cash</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-luxury-ivory/70 font-semibold mb-1">
-                  Reference No / Cheque No / UTR
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. UTR123456789"
-                  value={referenceNo}
-                  onChange={(e) => setReferenceNo(e.target.value)}
-                  className="w-full bg-luxury-charcoal border border-luxury-gold/30 rounded-xl px-3 py-2 text-white font-mono"
-                />
-              </div>
             </div>
 
             <div>
-              <label className="block text-luxury-ivory/70 font-semibold mb-1">Payment Notes</label>
-              <textarea
-                rows={2}
-                placeholder="Optional payment remarks..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full bg-luxury-charcoal border border-luxury-gold/30 rounded-xl px-3 py-2 text-white"
+              <label className="block text-luxury-charcoal font-bold mb-1">Payment Method *</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full bg-white border border-luxury-border rounded-xl px-3 py-2.5 text-luxury-charcoal font-medium focus:outline-none focus:border-luxury-gold shadow-sm"
+              >
+                <option value="BANK_TRANSFER">Bank Transfer (NEFT / RTGS / IMPS)</option>
+                <option value="CHEQUE">Cheque / Demand Draft</option>
+                <option value="UPI">UPI / GPay / PhonePe</option>
+                <option value="CASH">Cash Deposit</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-luxury-gray font-semibold mb-1">Bank Ref No. / UTR / Cheque No.</label>
+              <input
+                type="text"
+                placeholder="UTR123456789"
+                value={referenceNo}
+                onChange={(e) => setReferenceNo(e.target.value)}
+                className="w-full bg-white border border-luxury-border rounded-xl px-3 py-2.5 font-mono text-luxury-charcoal focus:outline-none focus:border-luxury-gold shadow-sm"
               />
             </div>
 
+            <div>
+              <label className="block text-luxury-gray font-semibold mb-1">Staff Notes / Payment Remarks</label>
+              <input
+                type="text"
+                placeholder="e.g. Received partial settlement against Invoice #INV-2026-0001"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full bg-white border border-luxury-border rounded-xl px-3 py-2.5 text-luxury-charcoal focus:outline-none focus:border-luxury-gold shadow-sm"
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-luxury-border flex justify-end">
             <button
               type="submit"
               disabled={saving || !selectedCustomerId || !amount}
-              className="w-full py-3 bg-luxury-gold hover:bg-luxury-goldHover text-luxury-charcoal font-bold rounded-xl shadow-luxury text-xs uppercase tracking-wider transition-all disabled:opacity-50"
+              className="px-6 py-3 bg-luxury-gold hover:bg-luxury-gold/90 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
             >
-              {saving ? 'Recording Payment...' : 'Save & Post To Customer Ledger'}
+              <CheckCircle2 className="w-4 h-4" /> {saving ? 'Recording Voucher...' : 'Record Payment Receipt'}
             </button>
-          </form>
-        </div>
-
-        {/* Customer Accounts Quick List (5 cols) */}
-        <div className="lg:col-span-5 bg-luxury-charcoal/60 border border-luxury-gold/20 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-4">
-          <h3 className="font-serif text-sm font-bold text-luxury-gold uppercase tracking-wider flex items-center justify-between border-b border-luxury-gold/20 pb-3">
-            <span>Outstanding Balances</span>
-            <span className="text-xs text-luxury-ivory/60">{customers.length} Accounts</span>
-          </h3>
-
-          <div className="space-y-3 max-h-[400px] overflow-y-auto text-xs pr-1">
-            {customers.map((c) => (
-              <div
-                key={c.id}
-                onClick={() => setSelectedCustomerId(c.id)}
-                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                  selectedCustomerId === c.id
-                    ? 'bg-luxury-gold/20 border-luxury-gold'
-                    : 'bg-white/5 border-luxury-gold/10 hover:bg-white/10'
-                }`}
-              >
-                <div>
-                  <div className="font-semibold text-white">{c.businessName}</div>
-                  <div className="text-[10px] text-luxury-ivory/50">Mobile: {c.mobile}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-bold text-amber-400">
-                    ₹{c.outstandingBalance.toLocaleString('en-IN')}
-                  </div>
-                  <span className="text-[9px] text-luxury-ivory/40">Outstanding</span>
-                </div>
-              </div>
-            ))}
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
 };
 
 export default AdminWholesalePaymentsPage;
-
