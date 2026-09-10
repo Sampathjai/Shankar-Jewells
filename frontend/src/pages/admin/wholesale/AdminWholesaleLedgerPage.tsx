@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchApi } from '../../../api/client';
 import { CustomerPhotoPreview } from '../../../components/common/CustomerPhotoPreview';
+import { WhatsAppShareButton } from '../../../components/common/WhatsAppShareButton';
 import { formatCurrency } from '../../../utils/formatters';
 import { formatGoldGrams, roundGoldGrams, roundCurrency } from '../../../utils/goldEquivalent';
+import { buildWholesaleLedgerMessage } from '../../../utils/whatsapp';
 import {
   FileSpreadsheet,
   Printer,
@@ -108,12 +110,28 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
           <ArrowLeft className="w-4 h-4" /> Back to Wholesale Customers
         </Link>
 
-        <button
-          onClick={() => window.print()}
-          className="flex items-center gap-1.5 px-5 py-2.5 bg-luxury-gold hover:bg-luxury-gold/90 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md transition-all"
-        >
-          <Printer className="w-4 h-4" /> Print Customer Statement
-        </button>
+        <div className="flex gap-3 items-center">
+          {customer && (
+            <WhatsAppShareButton
+              phone={customer.mobile}
+              message={buildWholesaleLedgerMessage({
+                customerName: customer.businessName,
+                creditLimitGoldGrams: customer.creditLimitGoldGrams || 0,
+                outstandingGoldGrams: customer.outstandingGoldGrams || 0,
+                activeRate24K,
+                mobile: customer.mobile,
+              })}
+              label="WhatsApp Statement"
+            />
+          )}
+
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-luxury-gold hover:bg-luxury-gold/90 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md transition-all"
+          >
+            <Printer className="w-4 h-4" /> Print Customer Statement
+          </button>
+        </div>
       </div>
 
       {loading ? (

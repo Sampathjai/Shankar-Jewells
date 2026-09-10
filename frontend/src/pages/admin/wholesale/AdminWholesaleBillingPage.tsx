@@ -4,8 +4,10 @@ import { Product } from '../../../types';
 import { useToast } from '../../../components/common/Toast';
 import { CustomerPhotoPreview } from '../../../components/common/CustomerPhotoPreview';
 import { WholesalePaymentReceiptModal } from '../../../components/wholesale/WholesalePaymentReceiptModal';
+import { WhatsAppShareButton } from '../../../components/common/WhatsAppShareButton';
 import { formatCurrency } from '../../../utils/formatters';
 import { calculateInvoiceGoldEquivalent, formatGoldGrams, roundGoldGrams } from '../../../utils/goldEquivalent';
+import { buildWholesaleInvoiceMessage } from '../../../utils/whatsapp';
 import {
   Building2,
   Plus,
@@ -282,7 +284,21 @@ export const AdminWholesaleBillingPage: React.FC = () => {
             </h2>
             <p className="text-xs text-luxury-gray">Invoice #{createdInvoice.invoiceNumber} recorded in 24K Gold Equivalent ledger.</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            <WhatsAppShareButton
+              phone={selectedCustomer?.mobile || createdInvoice.customer?.mobile}
+              message={buildWholesaleInvoiceMessage({
+                invoiceNumber: createdInvoice.invoiceNumber,
+                customerName: selectedCustomer?.businessName || createdInvoice.customer?.businessName || 'Wholesale Customer',
+                grandTotal: createdInvoice.grandTotal,
+                goldEquivalentGrams: createdInvoice.goldEquivalentGrams || (createdInvoice.grandTotal / (createdInvoice.rate24K || activeRate24K)),
+                rate24K: createdInvoice.rate24K || activeRate24K,
+                gstRegistered: selectedCustomer?.gstRegistered,
+                gstin: selectedCustomer?.gstin,
+                outstandingGoldGrams: selectedCustomer?.outstandingGoldGrams,
+              })}
+              label="WhatsApp Invoice"
+            />
             <button
               onClick={() => window.print()}
               className="flex items-center gap-2 px-4 py-2 bg-luxury-gold text-white font-bold rounded-xl text-xs shadow-sm hover:bg-luxury-gold/90 transition-all min-h-[44px]"

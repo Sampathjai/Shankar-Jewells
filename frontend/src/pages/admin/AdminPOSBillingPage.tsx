@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Product } from '../../types';
 import { fetchApi } from '../../api/client';
 import { SmartImage } from '../../components/common/SmartImage';
+import { WhatsAppShareButton } from '../../components/common/WhatsAppShareButton';
+import { buildRetailInvoiceMessage } from '../../utils/whatsapp';
 import {
   Search,
   Plus,
@@ -908,7 +910,19 @@ export const AdminPOSBillingPage: React.FC = () => {
                   Invoice {lastInvoice.invoiceNumber}
                 </h2>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                {lastInvoice && (
+                  <WhatsAppShareButton
+                    phone={selectedCustomer?.mobile || customerForm.phone}
+                    message={buildRetailInvoiceMessage({
+                      invoiceNumber: lastInvoice.invoiceNumber,
+                      customerName: selectedCustomer?.name || customerForm.name || 'Valued Customer',
+                      totalAmount: lastInvoice.grandTotal || lastInvoice.totalAmount || 0,
+                      itemCount: billItems.length,
+                    })}
+                    label="WhatsApp Invoice"
+                  />
+                )}
                 <button
                   onClick={() => window.print()}
                   className="px-4 py-2 rounded-full bg-luxury-gold text-white text-xs font-semibold uppercase flex items-center gap-2"

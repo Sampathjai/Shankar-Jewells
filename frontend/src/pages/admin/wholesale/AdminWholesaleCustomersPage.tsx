@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchApi } from '../../../api/client';
 import { useToast } from '../../../components/common/Toast';
+import { CameraCaptureModal } from '../../../components/common/CameraCaptureModal';
 import {
   Users,
   Plus,
@@ -66,6 +67,7 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
   const [activeRate24K, setActiveRate24K] = useState<number>(6830);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showCameraModal, setShowCameraModal] = useState(false);
 
   // Search & Filter state
   const [searchInput, setSearchInput] = useState('');
@@ -753,7 +755,7 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
                         <div className="space-y-2">
                           <button
                             type="button"
-                            onClick={startCamera}
+                            onClick={() => setShowCameraModal(true)}
                             className="w-full py-2 bg-luxury-charcoal text-white font-bold rounded-xl text-xs hover:bg-luxury-charcoal/90 transition-all flex items-center justify-center gap-1.5"
                           >
                             <Camera className="w-4 h-4 text-luxury-gold" /> Take Photo With Camera
@@ -785,6 +787,16 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
                         capture="environment"
                         onChange={handleFileUpload}
                         className="hidden"
+                      />
+
+                      <CameraCaptureModal
+                        isOpen={showCameraModal}
+                        onClose={() => setShowCameraModal(false)}
+                        onPhotoCaptured={(file, previewUrl) => {
+                          setPhotoBlob(file);
+                          setPhotoPreviewUrl(previewUrl);
+                          showToast('Customer photo captured successfully.', 'success');
+                        }}
                       />
                     </div>
                   </div>

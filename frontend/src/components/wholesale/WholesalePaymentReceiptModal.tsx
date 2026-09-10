@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { X, Printer, CheckCircle2, ShieldCheck, Sparkles, Building2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { formatGoldGrams } from '../../utils/goldEquivalent';
+import { WhatsAppShareButton } from '../common/WhatsAppShareButton';
+import { buildWholesalePaymentMessage } from '../../utils/whatsapp';
 
 interface WholesalePaymentReceiptModalProps {
   isOpen: boolean;
@@ -67,6 +69,24 @@ export const WholesalePaymentReceiptModal: React.FC<WholesalePaymentReceiptModal
           </span>
 
           <div className="flex items-center gap-2">
+            <WhatsAppShareButton
+              phone={receiptData.mobile}
+              message={buildWholesalePaymentMessage({
+                paymentNumber: receiptData.paymentNumber,
+                customerName: receiptData.businessName || receiptData.customerName || 'Retail Customer',
+                paymentType: receiptData.paymentType,
+                goldPurity: receiptData.goldPurity,
+                goldWeightGrams: receiptData.goldWeightGrams,
+                goldEquivalent24KGrams: receiptData.goldEquivalent24KGrams,
+                cashAmount: receiptData.cashAmount,
+                cashEquivalent24KGrams: receiptData.cashEquivalent24KGrams,
+                totalEquivalent24KGrams: receiptData.totalEquivalent24KGrams,
+                remainingOutstandingGoldGrams: receiptData.remainingOutstandingGoldGrams,
+                paymentDate: receiptData.paymentDate,
+              })}
+              label="WhatsApp Receipt"
+            />
+
             <button
               onClick={handlePrint}
               className="px-4 py-2 rounded-xl bg-luxury-gold text-white text-xs font-bold uppercase hover:bg-luxury-gold-dark transition-all flex items-center gap-1.5 shadow-sm"

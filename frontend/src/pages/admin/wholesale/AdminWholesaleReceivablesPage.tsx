@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchApi } from '../../../api/client';
+import { WhatsAppShareButton } from '../../../components/common/WhatsAppShareButton';
 import { formatCurrency } from '../../../utils/formatters';
 import {
   TrendingDown,
@@ -74,12 +75,19 @@ export const AdminWholesaleReceivablesPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => window.print()}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 bg-luxury-gold hover:bg-luxury-gold/90 text-white rounded-xl text-xs font-bold shadow-sm transition-all min-h-[44px]"
-        >
-          <Printer className="w-4 h-4" /> Print Aging Report
-        </button>
+        <div className="flex gap-2 items-center">
+          <WhatsAppShareButton
+            phone="91944394912"
+            message={`*SHANKER JEWELLS • TRICHY*\n*Accounts Receivables & Aging Summary*\nTotal Active Accounts: ${data?.activeCustomersCount || 0}\nTotal Net INR Valuation: ₹${data?.totalOutstanding?.toLocaleString('en-IN') || '0'}\nTotal Overdue: ₹${data?.totalOverdue?.toLocaleString('en-IN') || '0'}\n\nStatement Date: ${new Date().toLocaleDateString('en-IN')}`}
+            label="WhatsApp Aging Summary"
+          />
+          <button
+            onClick={() => window.print()}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 bg-luxury-gold hover:bg-luxury-gold/90 text-white rounded-xl text-xs font-bold shadow-sm transition-all min-h-[44px]"
+          >
+            <Printer className="w-4 h-4" /> Print Aging Report
+          </button>
+        </div>
       </div>
 
       {loading ? (
