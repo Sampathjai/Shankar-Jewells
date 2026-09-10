@@ -553,3 +553,4 @@ export const AdminWholesalePaymentPage: React.FC = () => {
 };
 
 export default AdminWholesalePaymentPage;
+
