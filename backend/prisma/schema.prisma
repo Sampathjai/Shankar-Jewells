@@ -1,0 +1,607 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         String   @default("CUSTOMER") // SUPER_ADMIN, MANAGER, BILLING_STAFF, INVENTORY_STAFF, DESIGNER, CUSTOMER
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  addresses               Address[]
+  customRequests          CustomRequest[]      @relation("CustomerRequests")
+  assignedCustomRequests  CustomRequest[]      @relation("AssignedStaff")
+  quotations              Quotation[]
+  orders                  Order[]
+  auditLogs               AuditLog[]
+  wishlist                Wishlist?
+  customerProfile         Customer?
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  userId      String?  @unique
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name        String
+  phone       String   @unique
+  email       String?
+  address     String?
+  gstin       String?
+  totalOrders Int      @default(0)
+  totalSpent  Float    @default(0.0)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders   Order[]
+  invoices Invoice[]
+  returns  Return[]
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   @default("SHIPPING") // SHIPPING, BILLING
+  street    String
+  city      String
+  state     String
+  pincode   String
+  country   String   @default("India")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MetalRate {
+  id              String    @id @default(uuid())
+  metalType       String    // GOLD, SILVER, PLATINUM
+  purity          String    // K24, K22, K18, K14, SILVER_925, SILVER_999
+  ratePerGram     Float
+  currency        String    @default("INR")
+  effectiveFrom   DateTime  @default(now())
+  effectiveTo     DateTime?
+  source          String    @default("MANUAL") // MANUAL, API
+  sourceReference String?
+  createdBy       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  metalType   String?    // GOLD, SILVER
+  parentId    String?
+  parent      Category?  @relation("CategorySubcategories", fields: [parentId], references: [id])
+  children    Category[] @relation("CategorySubcategories")
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  products      Product[]
+  subcategories Subcategory[]
+}
+
+model Subcategory {
+  id          String   @id @default(uuid())
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products Product[]
+}
+
+model Collection {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  bannerUrl   String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products Product[]
+}
+
+model Product {
+  id                String       @id @default(uuid())
+  sku               String       @unique
+  barcode           String       @unique
+  name              String
+  slug              String       @unique
+  description       String?
+
+  categoryId        String
+  category          Category     @relation(fields: [categoryId], references: [id])
+  subcategoryId     String?
+  subcategory       Subcategory? @relation(fields: [subcategoryId], references: [id])
+  collectionId      String?
+  collection        Collection?  @relation(fields: [collectionId], references: [id])
+
+  metalType         String       // GOLD, SILVER
+  purity            String       // K24, K22, K18, K14, SILVER_925, SILVER_999
+
+  grossWeight       Float        @default(0.0) // grams
+  netWeight         Float        @default(0.0) // grams
+
+  stoneType         String?
+  stoneWeight       Float?       @default(0.0)
+  stoneCount        Int?         @default(0)
+
+  diamondWeight     Float?       @default(0.0) // carats
+  diamondQuality    String?
+
+  pricingMode       String       @default("METAL_RATE_BASED") // METAL_RATE_BASED, FIXED_PRICE, STARTING_PRICE
+  purchasePrice     Float        @default(0.0)
+  sellingPrice      Float        @default(0.0)
+  mrp               Float?       @default(0.0)
+
+  makingChargeType  String       @default("PER_GRAM") // FIXED, PER_GRAM, PERCENTAGE
+  makingChargeValue Float        @default(0.0)
+
+  wastageType       String       @default("PERCENTAGE") // FIXED_WEIGHT, PERCENTAGE
+  wastageValue      Float        @default(0.0)
+
+  stoneCharge       Float        @default(0.0)
+  otherCharges      Float        @default(0.0)
+
+  gstRate           Float        @default(3.0)
+
+  stockQuantity     Int          @default(1)
+  lowStockThreshold Int          @default(1)
+
+  certification     String?
+  hallmark          Boolean      @default(true)
+
+  featured          Boolean      @default(false)
+  newArrival        Boolean      @default(false)
+  bestSeller        Boolean      @default(false)
+  active            Boolean      @default(true)
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  images            ProductImage[]
+  stockTransactions StockTransaction[]
+  purchaseItems     PurchaseItem[]
+  orderItems        OrderItem[]
+  invoiceItems      InvoiceItem[]
+  returnItems       ReturnItem[]
+  wishlistItems     WishlistItem[]
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  isPrimary Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model StockTransaction {
+  id               String   @id @default(uuid())
+  productId        String
+  product          Product  @relation(fields: [productId], references: [id])
+  transactionType  String   // PURCHASE, SALE, RETURN, ADJUSTMENT, TRANSFER_IN, TRANSFER_OUT, DAMAGE
+  quantity         Int
+  grossWeight      Float
+  netWeight        Float
+  previousQuantity Int
+  newQuantity      Int
+  previousWeight   Float
+  newWeight        Float
+  referenceType    String?
+  referenceId      String?
+  userId           String?
+  notes            String?
+  createdAt        DateTime @default(now())
+}
+
+model Supplier {
+  id            String   @id @default(uuid())
+  name          String
+  contactPerson String?
+  phone         String
+  email         String?
+  address       String?
+  gstin         String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  purchases Purchase[]
+}
+
+model Purchase {
+  id              String   @id @default(uuid())
+  purchaseNumber  String   @unique
+  supplierId      String
+  supplier        Supplier @relation(fields: [supplierId], references: [id])
+  supplierInvoice String?
+  purchaseDate    DateTime @default(now())
+  subtotal        Float
+  makingCharge    Float    @default(0.0)
+  stoneCharge     Float    @default(0.0)
+  tax             Float    @default(0.0)
+  total           Float
+  status          String   @default("COMPLETED")
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items PurchaseItem[]
+}
+
+model PurchaseItem {
+  id           String   @id @default(uuid())
+  purchaseId   String
+  purchase     Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  quantity     Int
+  grossWeight  Float
+  netWeight    Float
+  unitPrice    Float
+  makingCharge Float    @default(0.0)
+  stoneCharge  Float    @default(0.0)
+  tax          Float    @default(0.0)
+  total        Float
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  orderNumber     String   @unique
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id])
+  
+  status          String   @default("PENDING") // PENDING, CONFIRMED, PROCESSING, READY, SHIPPED, DELIVERED, CANCELLED, RETURN_REQUESTED, RETURNED
+  paymentStatus   String   @default("PENDING") // PENDING, PARTIAL, COMPLETED, REFUNDED
+  paymentMethod   String   @default("CARD") // CASH, UPI, CARD, BANK_TRANSFER, CREDIT, SPLIT
+
+  subtotal        Float
+  totalWastage    Float    @default(0.0)
+  totalMaking     Float    @default(0.0)
+  totalStone      Float    @default(0.0)
+  totalTax        Float    @default(0.0)
+  discount        Float    @default(0.0)
+  grandTotal      Float
+
+  shippingAddress String?
+  billingAddress  String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items    OrderItem[]
+  invoices Invoice[]
+  payments Payment[]
+  returns  Return[]
+}
+
+model OrderItem {
+  id           String   @id @default(uuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  sku          String
+  name         String
+  metalType    String
+  purity       String
+  grossWeight  Float
+  netWeight    Float
+  metalRate    Float
+  makingCharge Float
+  wastage      Float
+  stoneCharge  Float
+  tax          Float
+  unitPrice    Float
+  quantity     Int
+  totalPrice   Float
+}
+
+model Invoice {
+  id            String    @id @default(uuid())
+  invoiceNumber String    @unique
+  orderId       String?
+  order         Order?    @relation(fields: [orderId], references: [id])
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  invoiceDate   DateTime  @default(now())
+  dueDate       DateTime?
+  
+  subtotal      Float
+  tax           Float
+  discount      Float     @default(0.0)
+  grandTotal    Float
+  status        String    @default("PAID")
+  pdfUrl        String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  items    InvoiceItem[]
+  payments Payment[]
+  returns  Return[]
+}
+
+model InvoiceItem {
+  id           String   @id @default(uuid())
+  invoiceId    String
+  invoice      Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  sku          String
+  description  String
+  quantity     Int
+  grossWeight  Float
+  netWeight    Float
+  metalRate    Float
+  makingCharge Float
+  tax          Float
+  total        Float
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  paymentNumber String   @unique
+  orderId       String?
+  order         Order?   @relation(fields: [orderId], references: [id])
+  invoiceId     String?
+  invoice       Invoice? @relation(fields: [invoiceId], references: [id])
+  amount        Float
+  paymentMethod String
+  status        String   @default("COMPLETED")
+  referenceNo   String?
+  notes         String?
+  createdAt     DateTime @default(now())
+}
+
+model Return {
+  id           String    @id @default(uuid())
+  returnNumber String    @unique
+  orderId      String
+  order        Order     @relation(fields: [orderId], references: [id])
+  invoiceId    String?
+  invoice      Invoice?  @relation(fields: [invoiceId], references: [id])
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  reason       String
+  refundAmount Float
+  refundMethod String    @default("CASH")
+  status       String    @default("REQUESTED") // REQUESTED, APPROVED, REJECTED, COMPLETED
+  approvedBy   String?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  items ReturnItem[]
+}
+
+model ReturnItem {
+  id           String  @id @default(uuid())
+  returnId     String
+  return       Return  @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product @relation(fields: [productId], references: [id])
+  quantity     Int
+  grossWeight  Float
+  netWeight    Float
+  refundAmount Float
+}
+
+model CustomRequest {
+  id              String   @id @default(uuid())
+  requestNumber   String   @unique
+  customerId      String?
+  customer        User?    @relation("CustomerRequests", fields: [customerId], references: [id])
+  
+  name            String
+  phone           String
+  whatsapp        String?
+  email           String?
+
+  jewelleryType   String
+  metalType       String   @default("GOLD")
+  purity          String   @default("K22")
+  approxBudget    Float?
+  approxWeight    Float?
+  quantity        Int      @default(1)
+  occasion        String?
+  requiredDate    DateTime?
+  notes           String?
+
+  status          String   @default("NEW") // NEW, REVIEWING, DESIGNING, QUOTATION_SENT, CUSTOMER_APPROVED, ADVANCE_RECEIVED, IN_PRODUCTION, QUALITY_CHECK, READY, DELIVERED, CANCELLED
+  assignedStaffId String?
+  assignedStaff   User?    @relation("AssignedStaff", fields: [assignedStaffId], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  images        CustomRequestImage[]
+  statusHistory CustomRequestStatusHistory[]
+  quotations    Quotation[]
+}
+
+model CustomRequestImage {
+  id              String        @id @default(uuid())
+  customRequestId String
+  customRequest   CustomRequest @relation(fields: [customRequestId], references: [id], onDelete: Cascade)
+  url             String
+  caption         String?
+  createdAt       DateTime      @default(now())
+}
+
+model CustomRequestStatusHistory {
+  id              String        @id @default(uuid())
+  customRequestId String
+  customRequest   CustomRequest @relation(fields: [customRequestId], references: [id], onDelete: Cascade)
+  status          String
+  notes           String?
+  changedBy       String?
+  createdAt       DateTime      @default(now())
+}
+
+model Quotation {
+  id              String    @id @default(uuid())
+  quotationNumber String    @unique
+  customRequestId String?
+  customRequest   CustomRequest? @relation(fields: [customRequestId], references: [id])
+  customerId      String?
+  customer        User?     @relation(fields: [customerId], references: [id])
+  secureToken     String    @unique @default(uuid())
+  
+  status          String    @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, REVISED, EXPIRED
+  currentVersion  Int       @default(1)
+  validUntil      DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  versions QuotationVersion[]
+}
+
+model QuotationVersion {
+  id             String    @id @default(uuid())
+  quotationId    String
+  quotation      Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  versionNumber  Int
+  
+  metalType      String    @default("GOLD")
+  purity         String    @default("K22")
+  metalRate      Float
+  grossWeight    Float
+  netWeight      Float
+  wastage        Float     @default(0.0)
+  makingCharges  Float
+  stoneCharges   Float     @default(0.0)
+  otherCharges   Float     @default(0.0)
+  discount       Float     @default(0.0)
+  taxRate        Float     @default(3.0)
+  taxAmount      Float
+  totalAmount    Float
+
+  designImageUrl String?
+  terms          String?
+  notes          String?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+
+  items QuotationItem[]
+}
+
+model QuotationItem {
+  id                 String           @id @default(uuid())
+  quotationVersionId String
+  quotationVersion   QuotationVersion @relation(fields: [quotationVersionId], references: [id], onDelete: Cascade)
+  name               String
+  description        String?
+  grossWeight        Float
+  netWeight          Float
+  metalRate          Float
+  makingCharges      Float
+  stoneCharges       Float            @default(0.0)
+  total              Float
+}
+
+model Enquiry {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String
+  email     String?
+  subject   String?
+  message   String
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+}
+
+model Banner {
+  id        String   @id @default(uuid())
+  title     String
+  subtitle  String?
+  imageUrl  String
+  linkUrl   String?
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Coupon {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  discountType  String    @default("PERCENTAGE")
+  discountValue Float
+  minOrderValue Float?    @default(0.0)
+  maxDiscount   Float?
+  validFrom     DateTime  @default(now())
+  validTo       DateTime
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  userEmail String?
+  action    String
+  entity    String
+  entityId  String?
+  oldValue  String?
+  newValue  String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  group       String   @default("GENERAL")
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items WishlistItem[]
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([wishlistId, productId])
+}
+
