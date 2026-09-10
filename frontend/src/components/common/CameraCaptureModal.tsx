@@ -245,3 +245,4 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
     </div>
   );
 };
+

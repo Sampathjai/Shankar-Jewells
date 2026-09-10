@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { Search, Heart, ShoppingBag, User as UserIcon, Menu, X, Sparkles, Gem } from 'lucide-react';
 import { AnnouncementBar } from './AnnouncementBar';
 import { MobileSearchModal } from '../common/MobileSearchModal';
+import { LanguageToggle } from './LanguageToggle';
 
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -84,7 +85,8 @@ export const Header: React.FC = () => {
         </nav>
 
         {/* Right Header Action Icons */}
-        <div className="flex items-center gap-1 sm:gap-4">
+        <div className="flex items-center gap-1 sm:gap-3">
+          <LanguageToggle showIcon={false} />
           {/* Mobile Search Button */}
           <button
             onClick={() => setMobileSearchOpen(true)}

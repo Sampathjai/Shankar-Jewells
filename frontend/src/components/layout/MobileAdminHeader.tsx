@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
+import { LanguageToggle } from './LanguageToggle';
 import { Gem, Menu, Bell, User as UserIcon, LogOut, X } from 'lucide-react';
 
 export const MobileAdminHeader: React.FC = () => {
@@ -30,8 +31,9 @@ export const MobileAdminHeader: React.FC = () => {
         </div>
       </Link>
 
-      {/* Profile & Notifications */}
-      <div className="flex items-center gap-2 relative">
+      {/* Profile & Language Controls */}
+      <div className="flex items-center gap-3 relative">
+        <LanguageToggle showIcon={false} />
         <div className="relative">
           <button
             onClick={() => setProfileOpen(!profileOpen)}

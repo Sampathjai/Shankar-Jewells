@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchApi } from '../../api/client';
 import { formatCurrency } from '../../utils/formatters';
+import { useLanguage } from '../../i18n';
 import { Sparkles, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -12,6 +13,7 @@ interface StructuredRates {
 }
 
 export const AnnouncementBar: React.FC = () => {
+  const { t } = useLanguage();
   const [rates, setRates] = useState<StructuredRates | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string>('');
 
@@ -45,16 +47,16 @@ export const AnnouncementBar: React.FC = () => {
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
         <div className="flex items-center gap-4 overflow-x-auto text-[11px] sm:text-xs tracking-wider">
           <span className="flex items-center gap-1 text-luxury-gold font-bold uppercase tracking-widest shrink-0">
-            <Sparkles className="w-3.5 h-3.5 text-luxury-gold animate-pulse" /> Live Rates {updatedAt ? `(${updatedAt})` : ''}:
+            <Sparkles className="w-3.5 h-3.5 text-luxury-gold animate-pulse" /> {t('header.liveMetalRates')} {updatedAt ? `(${updatedAt})` : ''}:
           </span>
           <span className="flex items-center gap-1">
-            <span className="text-luxury-ivory/70">LIVE GOLD 24K:</span>
-            <strong className="text-luxury-gold font-mono">{formatCurrency(rate24K)}/g</strong>
+            <span className="text-luxury-ivory/70">{t('header.gold24k')}:</span>
+            <strong className="text-luxury-gold font-mono">{formatCurrency(rate24K)}{t('header.perGram')}</strong>
           </span>
           <span className="hidden sm:inline text-luxury-gold/40">•</span>
           <span className="flex items-center gap-1">
-            <span className="text-luxury-ivory/70">LIVE SILVER 999:</span>
-            <strong className="text-luxury-gold font-mono">{formatCurrency(rateSilver999)}/g</strong>
+            <span className="text-luxury-ivory/70">{t('header.silver999')}:</span>
+            <strong className="text-luxury-gold font-mono">{formatCurrency(rateSilver999)}{t('header.perGram')}</strong>
           </span>
           <span className="hidden sm:inline text-luxury-gold/40">•</span>
           <span className="flex items-center gap-1">

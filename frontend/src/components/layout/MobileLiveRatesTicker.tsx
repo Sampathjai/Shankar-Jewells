@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchApi } from '../../api/client';
+import { useLanguage } from '../../i18n';
 import { Sparkles, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -12,6 +13,7 @@ interface StructuredRates {
 }
 
 export const MobileLiveRatesTicker: React.FC = () => {
+  const { t } = useLanguage();
   const [rates, setRates] = useState<StructuredRates | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -48,20 +50,20 @@ export const MobileLiveRatesTicker: React.FC = () => {
       <div className="flex items-center justify-between min-w-max gap-4">
         <div className="flex items-center gap-1.5 text-luxury-gold font-bold uppercase tracking-wider shrink-0">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-          <TrendingUp className="w-3.5 h-3.5" /> LIVE RATES {updatedAt ? `(${updatedAt})` : ''}:
+          <TrendingUp className="w-3.5 h-3.5" /> {t('header.liveMetalRates')} {updatedAt ? `(${updatedAt})` : ''}:
         </div>
 
         <div className="flex items-center gap-4 text-xs font-mono">
           <div className="flex items-center gap-1">
-            <span className="text-luxury-gold text-[10px] uppercase font-sans font-bold">LIVE GOLD 24K</span>
-            <span className="font-bold text-amber-300">{formatCurrency(rate24K)}/g</span>
+            <span className="text-luxury-gold text-[10px] uppercase font-sans font-bold">{t('header.gold24k')}</span>
+            <span className="font-bold text-amber-300">{formatCurrency(rate24K)}{t('header.perGram')}</span>
           </div>
 
           <span className="text-luxury-gold/40">•</span>
 
           <div className="flex items-center gap-1">
-            <span className="text-luxury-ivory/80 text-[10px] uppercase font-sans font-bold">LIVE SILVER 999</span>
-            <span className="font-bold text-slate-200">{formatCurrency(rateSilver999)}/g</span>
+            <span className="text-luxury-ivory/80 text-[10px] uppercase font-sans font-bold">{t('header.silver999')}</span>
+            <span className="font-bold text-slate-200">{formatCurrency(rateSilver999)}{t('header.perGram')}</span>
           </div>
 
           <span className="text-luxury-gold/40">•</span>

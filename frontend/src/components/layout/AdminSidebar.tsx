@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useLanguage } from '../../i18n';
+import { LanguageToggle } from './LanguageToggle';
 import {
   LayoutDashboard,
   Receipt,
@@ -40,12 +42,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { t } = useLanguage();
 
   const navGroups: NavGroup[] = [
     {
       items: [
         {
-          label: 'Dashboard Overview',
+          label: t('nav.dashboard'),
           path: '/admin',
           icon: LayoutDashboard,
           roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'BILLING_STAFF', 'INVENTORY_STAFF', 'WHOLESALE_MANAGER', 'DESIGNER'],
@@ -53,36 +56,36 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
       ],
     },
     {
-      groupName: 'SALES & BILLING',
+      groupName: t('nav.salesBilling'),
       items: [
-        { label: 'Retail POS Billing', path: '/admin/billing', icon: Receipt, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'BILLING_STAFF'] },
-        { label: 'Wholesale Billing', path: '/admin/wholesale', icon: Building2, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'WHOLESALE_MANAGER'] },
-        { label: 'Wholesale Customers', path: '/admin/wholesale/customers', icon: Users, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'WHOLESALE_MANAGER'] },
-        { label: 'Wholesale Payments', path: '/admin/wholesale/payments', icon: CreditCard, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'WHOLESALE_MANAGER'] },
-        { label: 'Receivables & Aging', path: '/admin/wholesale/receivables', icon: TrendingDown, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'WHOLESALE_MANAGER'] },
+        { label: t('nav.retailPos'), path: '/admin/billing', icon: Receipt, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'BILLING_STAFF'] },
+        { label: t('nav.wholesaleBilling'), path: '/admin/wholesale', icon: Building2, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'WHOLESALE_MANAGER'] },
+        { label: t('nav.wholesaleCustomers'), path: '/admin/wholesale/customers', icon: Users, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'WHOLESALE_MANAGER'] },
+        { label: t('nav.wholesalePayments'), path: '/admin/wholesale/payments', icon: CreditCard, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'WHOLESALE_MANAGER'] },
+        { label: t('nav.receivablesAging'), path: '/admin/wholesale/receivables', icon: TrendingDown, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'WHOLESALE_MANAGER'] },
       ],
     },
     {
-      groupName: 'INVENTORY & CATALOGUE',
+      groupName: t('nav.inventoryCatalogue'),
       items: [
-        { label: 'Product Catalogue', path: '/admin/products', icon: Package, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'INVENTORY_STAFF'] },
-        { label: 'Category Manager', path: '/admin/categories', icon: FolderTree, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'INVENTORY_STAFF'] },
-        { label: 'Vault Stock Inventory', path: '/admin/inventory', icon: Vault, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'INVENTORY_STAFF'] },
+        { label: t('nav.productCatalogue'), path: '/admin/products', icon: Package, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'INVENTORY_STAFF'] },
+        { label: t('nav.categoryManager'), path: '/admin/categories', icon: FolderTree, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'INVENTORY_STAFF'] },
+        { label: t('nav.vaultInventory'), path: '/admin/inventory', icon: Vault, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'INVENTORY_STAFF'] },
       ],
     },
     {
-      groupName: 'CUSTOM JEWELLERY',
+      groupName: t('nav.customJewellery'),
       items: [
-        { label: 'Custom Requests', path: '/admin/custom-requests', icon: Sparkles, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'DESIGNER'] },
+        { label: t('nav.customRequests'), path: '/admin/custom-requests', icon: Sparkles, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'DESIGNER'] },
       ],
     },
     {
-      groupName: 'FINANCE & SYSTEM',
+      groupName: t('nav.financeSystem'),
       items: [
-        { label: 'Invoice History', path: '/admin/invoices', icon: FileSpreadsheet, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'BILLING_STAFF'] },
-        { label: 'Metal Rates Engine', path: '/admin/metal-rates', icon: TrendingUp, roles: ['SUPER_ADMIN', 'STORE_MANAGER'] },
-        { label: 'Audit Logs', path: '/admin/audit-logs', icon: ShieldAlert, roles: ['SUPER_ADMIN', 'STORE_MANAGER'] },
-        { label: 'User Management', path: '/admin/users', icon: UserCheck, roles: ['SUPER_ADMIN'] },
+        { label: t('nav.invoiceHistory'), path: '/admin/invoices', icon: FileSpreadsheet, roles: ['SUPER_ADMIN', 'STORE_MANAGER', 'BILLING_STAFF'] },
+        { label: t('nav.metalRates'), path: '/admin/metal-rates', icon: TrendingUp, roles: ['SUPER_ADMIN', 'STORE_MANAGER'] },
+        { label: t('nav.auditLogs'), path: '/admin/audit-logs', icon: ShieldAlert, roles: ['SUPER_ADMIN', 'STORE_MANAGER'] },
+        { label: t('nav.users'), path: '/admin/users', icon: UserCheck, roles: ['SUPER_ADMIN'] },
       ],
     },
   ];
@@ -114,45 +117,51 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
           )}
         </div>
 
-        {/* User Info Card */}
-        <div className="p-3 bg-white/5 rounded-xl border border-luxury-gold/20 text-xs flex items-center justify-between">
-          <div>
-            <div className="font-semibold text-white truncate max-w-[130px]">{user?.name || 'Staff User'}</div>
-            <div className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider">{user?.role}</div>
+        {/* User Info & Language Control Card */}
+        <div className="p-3 bg-white/5 rounded-xl border border-luxury-gold/20 text-xs flex items-center justify-between gap-2">
+          <div className="truncate">
+            <div className="font-semibold text-white truncate">{user?.name || 'Staff User'}</div>
+            <div className="text-[10px] text-luxury-gold uppercase font-mono">{user?.role || 'SUPER_ADMIN'}</div>
           </div>
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Connected" />
+          <LanguageToggle showIcon={false} />
         </div>
 
-        {/* Navigation List grouped */}
-        <nav className="space-y-4 text-xs">
-          {navGroups.map((group, idx) => {
-            const allowedItems = group.items.filter((item) => !user || item.roles.includes(user.role));
-            if (allowedItems.length === 0) return null;
+        {/* Navigation Items */}
+        <nav className="space-y-4">
+          {navGroups.map((group, gIdx) => {
+            const visibleItems = group.items.filter(
+              (item) => !user || item.roles.includes(user.role)
+            );
+            if (visibleItems.length === 0) return null;
 
             return (
-              <div key={idx} className="space-y-1">
+              <div key={gIdx} className="space-y-1">
                 {group.groupName && (
-                  <div className="text-[9px] font-bold tracking-widest text-luxury-gold/60 uppercase px-3 py-1">
+                  <div className="text-[10px] font-bold text-luxury-gold/80 tracking-widest uppercase px-3 py-1">
                     {group.groupName}
                   </div>
                 )}
-                {allowedItems.map((item) => {
+                {visibleItems.map((item) => {
+                  const isActive =
+                    item.path === '/admin'
+                      ? location.pathname === '/admin' || location.pathname === '/admin/dashboard'
+                      : location.pathname.startsWith(item.path);
+
                   const Icon = item.icon;
-                  const active = location.pathname === item.path;
 
                   return (
                     <Link
                       key={item.path}
                       to={item.path}
                       onClick={onClose}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${
-                        active
-                          ? 'bg-luxury-gold text-luxury-charcoal font-bold shadow-luxury'
-                          : 'text-luxury-ivory/70 hover:bg-white/10 hover:text-white'
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                        isActive
+                          ? 'bg-luxury-gold text-luxury-charcoal font-bold shadow-sm'
+                          : 'text-luxury-ivory/80 hover:bg-white/10 hover:text-white'
                       }`}
                     >
                       <Icon className="w-4 h-4 shrink-0" />
-                      <span className="truncate">{item.label}</span>
+                      <span>{item.label}</span>
                     </Link>
                   );
                 })}
@@ -168,7 +177,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) =
           onClick={handleExitPortal}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-luxury-gold/10 hover:bg-luxury-gold hover:text-luxury-charcoal text-luxury-gold text-xs font-semibold uppercase transition-all border border-luxury-gold/30"
         >
-          <Globe className="w-4 h-4" /> Exit Portal (Website)
+          <Globe className="w-4 h-4" /> {t('nav.exitPortal')}
         </button>
       </div>
     </div>
