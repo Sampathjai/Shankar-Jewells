@@ -274,3 +274,4 @@ export const ta: TranslationKeys = {
     cameraDenied: "கேமரா அனுமதி மறுக்கப்பட்டுள்ளது. அமைப்புகளைச் சரிபார்க்கவும்.",
   },
 };
+

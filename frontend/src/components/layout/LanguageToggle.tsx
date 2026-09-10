@@ -63,3 +63,4 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({
     </div>
   );
 };
+
