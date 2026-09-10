@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 import authRouter from './modules/auth/auth.router.js';
 import metalRatesRouter from './modules/metal-rates/metal-rates.router.js';
@@ -20,20 +21,39 @@ import usersRouter from './modules/users/users.router.js';
 import uploadRouter from './modules/upload/upload.router.js';
 
 import { errorHandler } from './utils/errors.js';
+import prisma from './config/db.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
-// Security & Parsing Middlewares
+// Dynamic CORS configuration supporting Render environment variables
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.PUBLIC_SITE_URL,
+  process.env.CLIENT_URL,
+  process.env.ALLOWED_ORIGINS,
+  'http://localhost:5173',
+  'http://localhost:3000',
+].filter(Boolean) as string[];
+
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.some((allowed) => origin.startsWith(allowed) || allowed.includes(origin))) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -42,12 +62,34 @@ app.use(cookieParser());
 const uploadDir = process.env.UPLOAD_DIR || 'uploads';
 app.use('/uploads', express.static(path.resolve(uploadDir)));
 
-import prisma from './config/db.js';
-
-// Healthcheck & Database Diagnostic Endpoints
-app.get('/api/health', (req: Request, res: Response) => {
+// Root & API Health Check Endpoints for Render / Health Monitoring
+app.get('/health', async (req: Request, res: Response) => {
+  let dbStatus = 'disconnected';
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbStatus = 'connected';
+  } catch {
+    dbStatus = 'disconnected';
+  }
   res.status(200).json({
     status: 'ok',
+    database: dbStatus,
+    system: 'Shanker Jewells API',
+    timestamp: new Date(),
+  });
+});
+
+app.get('/api/health', async (req: Request, res: Response) => {
+  let dbStatus = 'disconnected';
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbStatus = 'connected';
+  } catch {
+    dbStatus = 'disconnected';
+  }
+  res.status(200).json({
+    status: 'ok',
+    database: dbStatus,
     system: 'Gold & Silver Jewellery Business Platform API',
     timestamp: new Date(),
   });
@@ -58,13 +100,13 @@ app.get('/api/health/database', async (req: Request, res: Response) => {
     await prisma.$queryRaw`SELECT 1`;
     res.status(200).json({
       api: 'ok',
-      database: 'ok',
+      database: 'connected',
       timestamp: new Date(),
     });
   } catch (err: any) {
     res.status(500).json({
       api: 'ok',
-      database: 'error',
+      database: 'disconnected',
       message: err.message,
     });
   }
@@ -89,7 +131,6 @@ app.use('/api/upload', uploadRouter);
 app.use(errorHandler);
 
 // Production Static Frontend Asset Serving
-import fs from 'fs';
 const rootFrontendDist = path.resolve(process.cwd(), '../frontend/dist');
 const localFrontendDist = path.resolve(__dirname, '../../frontend/dist');
 const distPath = fs.existsSync(rootFrontendDist) ? rootFrontendDist : fs.existsSync(localFrontendDist) ? localFrontendDist : null;
@@ -97,15 +138,25 @@ const distPath = fs.existsSync(rootFrontendDist) ? rootFrontendDist : fs.existsS
 if (distPath) {
   app.use(express.static(distPath));
   app.get('*', (req: Request, res: Response, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path === '/health') {
       return next();
     }
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`✨ Jewellery Platform Backend API listening on port ${PORT}`);
-  console.log(`📍 Health Check: http://localhost:${PORT}/api/health`);
-});
+// Bind to 0.0.0.0 as required by Render and containerized environments
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✨ Shanker Jewells Backend API listening on 0.0.0.0:${PORT}`);
+  console.log(`📍 Health Check: http://0.0.0.0:${PORT}/health`);
 
+  // Safe Database Startup Health Check
+  prisma.$queryRaw`SELECT 1`
+    .then(() => {
+      console.log('Database:\nConnected');
+    })
+    .catch((err) => {
+      console.error('Database:\nConnection failed');
+      console.error('Error detail:', err.message);
+    });
+});

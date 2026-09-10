@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: shanker-jewells-backend
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CLIENT_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: PUBLIC_SITE_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
