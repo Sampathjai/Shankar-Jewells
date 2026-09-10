@@ -33,23 +33,46 @@ export const authenticate = async (
       return next(new AppError('Authentication required. Please log in.', 401));
     }
 
-    const decoded: JwtPayload = verifyToken(token);
+    let decoded: JwtPayload;
+    try {
+      decoded = verifyToken(token);
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        code: 'INVALID_TOKEN',
+        message: 'Invalid or expired authentication session. Please sign in again.',
+      });
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, email: true, name: true, role: true, active: true },
     });
 
-    if (!user || !user.active) {
-      return next(
-        new AppError('The user belonging to this token no longer exists or is deactivated.', 401)
-      );
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        code: 'USER_NOT_FOUND',
+        message: 'The user belonging to this session no longer exists.',
+      });
+    }
+
+    if (!user.active) {
+      return res.status(401).json({
+        success: false,
+        code: 'USER_DEACTIVATED',
+        message: 'Your account has been deactivated. Please contact an administrator.',
+      });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    return next(new AppError('Invalid or expired authentication token.', 401));
+    return res.status(401).json({
+      success: false,
+      code: 'UNAUTHORIZED',
+      message: 'Authentication error. Please log in again.',
+    });
   }
 };
 

@@ -37,6 +37,9 @@ import { AdminWholesaleLedgerPage } from './pages/admin/wholesale/AdminWholesale
 // User Management Module
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 
+import { ToastProvider } from './components/common/Toast';
+import { Menu, Gem } from 'lucide-react';
+
 const CustomerLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col justify-between">
@@ -51,19 +54,38 @@ const CustomerLayout: React.FC = () => {
 };
 
 const AdminLayout: React.FC = () => {
+  const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false);
+
   return (
-    <div className="min-h-screen flex bg-luxury-ivory text-luxury-charcoal">
-      <AdminSidebar />
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
+    <div className="h-screen w-screen overflow-hidden flex bg-luxury-ivory text-luxury-charcoal admin-layout">
+      <AdminSidebar isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Mobile Header Bar */}
+        <div className="lg:hidden bg-luxury-charcoal text-white p-3.5 flex items-center justify-between border-b border-luxury-gold/20 shrink-0">
+          <div className="flex items-center gap-2 font-serif font-bold text-sm">
+            <Gem className="w-4 h-4 text-luxury-gold" /> SHANKER JEWELLS ERP
+          </div>
+          <button
+            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Independent Main Content Scroll Area */}
+        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden custom-admin-scrollbar admin-main">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };
 
 export const App: React.FC = () => {
   return (
-    <Router>
+    <ToastProvider>
+      <Router>
       <Routes>
         {/* Customer Routes */}
         <Route element={<CustomerLayout />}>
@@ -114,6 +136,7 @@ export const App: React.FC = () => {
         </Route>
       </Routes>
     </Router>
+  </ToastProvider>
   );
 };
 

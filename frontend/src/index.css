@@ -4,6 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 @layer base {
   body {
     @apply bg-luxury-ivory text-luxury-charcoal font-sans antialiased selection:bg-luxury-gold selection:text-white;
@@ -14,15 +22,46 @@
   }
 }
 
-/* Custom Luxury Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #FDFBF7;
-}
-::-webkit-scrollbar-thumb {
-  background: #D4AF37;
-  border-radius: 3px;
+.admin-layout {
+  height: 100vh;
+  overflow: hidden;
 }
 
+/* Custom Dedicated Shanker Jewells Scrollbar */
+.custom-admin-scrollbar::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.custom-admin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-admin-scrollbar::-webkit-scrollbar-thumb {
+  background: #E8E1D6;
+  border-radius: 999px;
+}
+
+.custom-admin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #B9913F;
+}
+
+.custom-admin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #E8E1D6 transparent;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

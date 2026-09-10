@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../../api/client';
 import { Product } from '../../../types';
+import { useToast } from '../../../components/common/Toast';
 import {
   Building2,
   Plus,
@@ -145,13 +146,15 @@ export const AdminWholesaleBillingPage: React.FC = () => {
     ? selectedCustomer.outstandingBalance + netCreditRequired > selectedCustomer.creditLimit
     : false;
 
+  const { showToast } = useToast();
+
   const handleCheckout = async (isAuthorizedOverride = false) => {
     if (!selectedCustomer) {
-      alert('Please select a wholesale retailer customer.');
+      showToast('Please select a wholesale retailer customer.', 'error');
       return;
     }
     if (billItems.length === 0) {
-      alert('Please add at least one product item to the wholesale bill.');
+      showToast('Please add at least one product item to the wholesale bill.', 'error');
       return;
     }
 

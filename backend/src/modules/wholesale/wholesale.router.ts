@@ -50,6 +50,8 @@ router.post(
       dueDays,
       discountRules,
       notes,
+      photoUrl,
+      photoStorageKey,
     } = req.body;
 
     if (!businessName || !mobile) {
@@ -78,6 +80,8 @@ router.post(
         dueDays: parseInt(dueDays) || 30,
         discountRules: discountRules || null,
         notes: notes || null,
+        photoUrl: photoUrl || null,
+        photoStorageKey: photoStorageKey || null,
         status: 'ACTIVE',
       },
     });
@@ -92,6 +96,80 @@ router.post(
     });
 
     res.status(201).json({ success: true, data: customer, message: 'Wholesale customer created.' });
+  })
+);
+
+// PATCH /api/wholesale/customers/:id
+router.patch(
+  '/customers/:id',
+  authorize('SUPER_ADMIN', 'MANAGER', 'WHOLESALE_MANAGER'),
+  catchAsync(async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const existing = await prisma.wholesaleCustomer.findUnique({ where: { id } });
+    if (!existing) {
+      throw new AppError('Wholesale customer not found.', 404);
+    }
+
+    const {
+      businessName,
+      contactPerson,
+      mobile,
+      whatsapp,
+      email,
+      address,
+      city,
+      state,
+      gstin,
+      pan,
+      creditLimit,
+      paymentTerms,
+      dueDays,
+      status,
+      notes,
+      photoUrl,
+      photoStorageKey,
+    } = req.body;
+
+    if (mobile && mobile !== existing.mobile) {
+      const mobileConflict = await prisma.wholesaleCustomer.findUnique({ where: { mobile } });
+      if (mobileConflict) {
+        throw new AppError('A wholesale customer with this mobile number already exists.', 400);
+      }
+    }
+
+    const updatedCustomer = await prisma.wholesaleCustomer.update({
+      where: { id },
+      data: {
+        ...(businessName !== undefined && { businessName }),
+        ...(contactPerson !== undefined && { contactPerson }),
+        ...(mobile !== undefined && { mobile }),
+        ...(whatsapp !== undefined && { whatsapp }),
+        ...(email !== undefined && { email }),
+        ...(address !== undefined && { address }),
+        ...(city !== undefined && { city }),
+        ...(state !== undefined && { state }),
+        ...(gstin !== undefined && { gstin }),
+        ...(pan !== undefined && { pan }),
+        ...(creditLimit !== undefined && { creditLimit: parseFloat(creditLimit) }),
+        ...(paymentTerms !== undefined && { paymentTerms }),
+        ...(dueDays !== undefined && { dueDays: parseInt(dueDays) }),
+        ...(status !== undefined && { status }),
+        ...(notes !== undefined && { notes }),
+        ...(photoUrl !== undefined && { photoUrl }),
+        ...(photoStorageKey !== undefined && { photoStorageKey }),
+      },
+    });
+
+    await recordAuditLog({
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      action: 'WHOLESALE_CUSTOMER_UPDATED',
+      entity: 'WholesaleCustomer',
+      entityId: id,
+      newValue: JSON.stringify(updatedCustomer),
+    });
+
+    res.status(200).json({ success: true, data: updatedCustomer, message: 'Wholesale customer updated.' });
   })
 );
 

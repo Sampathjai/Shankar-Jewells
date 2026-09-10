@@ -54,6 +54,20 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
     }
 
     if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+
+        if (
+          typeof window !== 'undefined' &&
+          window.location.pathname.startsWith('/admin') &&
+          window.location.pathname !== '/admin/login'
+        ) {
+          window.location.href = `/admin/login?error=${encodeURIComponent(
+            data.message || 'Session expired. Please log in again.'
+          )}`;
+        }
+      }
       throw new Error(data.message || `HTTP ${response.status}: API request failed`);
     }
 

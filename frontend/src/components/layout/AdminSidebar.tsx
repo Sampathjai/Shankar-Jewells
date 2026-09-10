@@ -18,6 +18,7 @@ import {
   UserCheck,
   Globe,
   Gem,
+  X,
 } from 'lucide-react';
 
 interface NavGroup {
@@ -30,7 +31,12 @@ interface NavGroup {
   }[];
 }
 
-export const AdminSidebar: React.FC = () => {
+interface AdminSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -85,21 +91,28 @@ export const AdminSidebar: React.FC = () => {
     navigate('/');
   };
 
-  return (
-    <aside className="w-64 bg-luxury-charcoal text-luxury-ivory min-h-screen flex flex-col justify-between p-4 border-r border-luxury-gold/20 select-none overflow-y-auto">
+  const sidebarContent = (
+    <div className="flex flex-col justify-between h-full p-4 space-y-5">
       <div className="space-y-5">
         {/* Admin Header */}
-        <Link to="/admin" className="flex items-center gap-3 p-2 border-b border-luxury-gold/20 pb-4">
-          <div className="w-9 h-9 rounded-full bg-luxury-gold text-luxury-charcoal flex items-center justify-center font-bold shadow-luxury shrink-0">
-            <Gem className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="font-serif text-base font-bold text-white leading-none tracking-wide">SHANKER JEWELLS</h2>
-            <span className="text-[9px] tracking-widest text-luxury-gold uppercase font-semibold">
-              TRICHY • SINCE 2000
-            </span>
-          </div>
-        </Link>
+        <div className="flex items-center justify-between p-2 border-b border-luxury-gold/20 pb-4">
+          <Link to="/admin" onClick={onClose} className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-luxury-gold text-luxury-charcoal flex items-center justify-center font-bold shadow-luxury shrink-0">
+              <Gem className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-serif text-base font-bold text-white leading-none tracking-wide">SHANKER JEWELLS</h2>
+              <span className="text-[9px] tracking-widest text-luxury-gold uppercase font-semibold">
+                TRICHY • SINCE 2000
+              </span>
+            </div>
+          </Link>
+          {onClose && (
+            <button onClick={onClose} className="lg:hidden text-luxury-gold hover:text-white p-1">
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
 
         {/* User Info Card */}
         <div className="p-3 bg-white/5 rounded-xl border border-luxury-gold/20 text-xs flex items-center justify-between">
@@ -131,6 +144,7 @@ export const AdminSidebar: React.FC = () => {
                     <Link
                       key={item.path}
                       to={item.path}
+                      onClick={onClose}
                       className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${
                         active
                           ? 'bg-luxury-gold text-luxury-charcoal font-bold shadow-luxury'
@@ -148,7 +162,7 @@ export const AdminSidebar: React.FC = () => {
         </nav>
       </div>
 
-      {/* Footer Exit Portal & Sign out */}
+      {/* Footer Exit Portal */}
       <div className="pt-4 border-t border-luxury-gold/20 space-y-2 shrink-0">
         <button
           onClick={handleExitPortal}
@@ -157,7 +171,26 @@ export const AdminSidebar: React.FC = () => {
           <Globe className="w-4 h-4" /> Exit Portal (Website)
         </button>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Fixed Sidebar */}
+      <aside className="w-64 h-screen shrink-0 bg-luxury-charcoal text-luxury-ivory border-r border-luxury-gold/20 hidden lg:block overflow-y-auto custom-admin-scrollbar select-none">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Sliding Drawer */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          <div className="fixed inset-0 bg-luxury-charcoal/70 backdrop-blur-sm" onClick={onClose} />
+          <aside className="relative w-64 h-full bg-luxury-charcoal text-luxury-ivory border-r border-luxury-gold/20 overflow-y-auto custom-admin-scrollbar select-none z-10 animate-slide-up">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../../api/client';
+import { useToast } from '../../../components/common/Toast';
 import {
   CreditCard,
   Building2,
@@ -47,10 +48,12 @@ export const AdminWholesalePaymentsPage: React.FC = () => {
     fetchCustomers();
   }, []);
 
+  const { showToast } = useToast();
+
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomerId || !amount || parseFloat(amount) <= 0) {
-      alert('Please select a customer and enter a valid positive payment amount.');
+      showToast('Please select a customer and enter a valid positive payment amount.', 'error');
       return;
     }
 
