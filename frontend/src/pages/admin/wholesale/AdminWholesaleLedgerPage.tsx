@@ -215,3 +215,4 @@ export const AdminWholesaleLedgerPage: React.FC = () => {
 };
 
 export default AdminWholesaleLedgerPage;
+

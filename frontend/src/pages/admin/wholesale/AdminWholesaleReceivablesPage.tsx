@@ -194,3 +194,4 @@ export const AdminWholesaleReceivablesPage: React.FC = () => {
 };
 
 export default AdminWholesaleReceivablesPage;
+

@@ -338,3 +338,4 @@ export const AdminConsignmentPartnersPage: React.FC = () => {
 };
 
 export default AdminConsignmentPartnersPage;
+

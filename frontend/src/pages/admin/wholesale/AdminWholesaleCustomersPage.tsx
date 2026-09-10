@@ -385,3 +385,4 @@ export const AdminWholesaleCustomersPage: React.FC = () => {
 };
 
 export default AdminWholesaleCustomersPage;
+

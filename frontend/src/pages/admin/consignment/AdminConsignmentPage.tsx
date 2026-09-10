@@ -194,3 +194,4 @@ export const AdminConsignmentPage: React.FC = () => {
 };
 
 export default AdminConsignmentPage;
+

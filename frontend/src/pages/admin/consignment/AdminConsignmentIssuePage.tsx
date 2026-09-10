@@ -449,3 +449,4 @@ export const AdminConsignmentIssuePage: React.FC = () => {
 };
 
 export default AdminConsignmentIssuePage;
+
