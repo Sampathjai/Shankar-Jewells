@@ -454,3 +454,4 @@ export const AdminCategoriesPage: React.FC = () => {
 };
 
 export default AdminCategoriesPage;
+

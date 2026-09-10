@@ -79,18 +79,22 @@ model MetalRate {
 }
 
 model Category {
-  id          String     @id @default(uuid())
-  name        String
-  slug        String     @unique
-  description String?
-  imageUrl    String?
-  metalType   String?    // GOLD, SILVER
-  parentId    String?
-  parent      Category?  @relation("CategorySubcategories", fields: [parentId], references: [id])
-  children    Category[] @relation("CategorySubcategories")
-  active      Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id             String        @id @default(uuid())
+  name           String
+  slug           String        @unique
+  description    String?
+  imageUrl       String?
+  metalType      String?       // GOLD, SILVER
+  parentId       String?
+  parent         Category?     @relation("CategorySubcategories", fields: [parentId], references: [id])
+  children       Category[]    @relation("CategorySubcategories")
+  sortOrder      Int           @default(0)
+  published      Boolean       @default(true)
+  showOnHomepage Boolean       @default(false)
+  showOnNav      Boolean       @default(true)
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   products      Product[]
   subcategories Subcategory[]
@@ -180,23 +184,29 @@ model Product {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
-  images            ProductImage[]
-  stockTransactions StockTransaction[]
-  purchaseItems     PurchaseItem[]
-  orderItems        OrderItem[]
-  invoiceItems      InvoiceItem[]
-  returnItems       ReturnItem[]
-  wishlistItems     WishlistItem[]
+  images                ProductImage[]
+  stockTransactions     StockTransaction[]
+  purchaseItems         PurchaseItem[]
+  orderItems            OrderItem[]
+  invoiceItems          InvoiceItem[]
+  returnItems           ReturnItem[]
+  wishlistItems         WishlistItem[]
+  wholesaleInvoiceItems WholesaleInvoiceItem[]
+  consignmentItems      ConsignmentItem[]
+  consignmentStock      ConsignmentStock[]
+  consignmentLedger     ConsignmentStockLedger[]
 }
 
 model ProductImage {
-  id        String   @id @default(uuid())
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  url       String
-  isPrimary Boolean  @default(false)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url        String
+  storageKey String?
+  altText    String?
+  isPrimary  Boolean  @default(false)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
 }
 
 model StockTransaction {
@@ -603,5 +613,245 @@ model WishlistItem {
   createdAt  DateTime @default(now())
 
   @@unique([wishlistId, productId])
+}
+
+// ============================================================
+// WHOLESALE & CREDIT SALES MODELS
+// ============================================================
+
+model WholesaleCustomer {
+  id                 String   @id @default(uuid())
+  businessName       String
+  contactPerson      String?
+  mobile             String   @unique
+  whatsapp           String?
+  email              String?
+  address            String?
+  city               String?
+  state              String?
+  gstin              String?
+  pan                String?
+  creditLimit        Float    @default(0.0)
+  outstandingBalance Float    @default(0.0)
+  paymentTerms       String   @default("30 Days")
+  dueDays            Int      @default(30)
+  discountRules      String?
+  notes              String?
+  status             String   @default("ACTIVE") // ACTIVE, ON_HOLD, BLOCKED, INACTIVE
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  invoices WholesaleInvoice[]
+  payments WholesalePayment[]
+  ledgers  WholesaleLedger[]
+}
+
+model WholesaleInvoice {
+  id                  String   @id @default(uuid())
+  invoiceNumber       String   @unique
+  customerId          String
+  customer            WholesaleCustomer @relation(fields: [customerId], references: [id])
+  invoiceDate         DateTime @default(now())
+  dueDate             DateTime
+  paymentStatus       String   @default("CREDIT") // CREDIT, PARTIAL, PAID, OVERDUE, CANCELLED
+  subtotal            Float
+  discount            Float    @default(0.0)
+  tax                 Float    @default(0.0)
+  grandTotal          Float
+  amountPaid          Float    @default(0.0)
+  outstandingAmount   Float
+  creditOverrideBy    String?
+  creditOverrideNotes String?
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  items    WholesaleInvoiceItem[]
+  payments WholesalePayment[]
+}
+
+model WholesaleInvoiceItem {
+  id           String           @id @default(uuid())
+  invoiceId    String
+  invoice      WholesaleInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product          @relation(fields: [productId], references: [id])
+  sku          String
+  description  String
+  quantity     Int
+  grossWeight  Float
+  netWeight    Float
+  metalRate    Float
+  makingCharge Float
+  tax          Float
+  total        Float
+}
+
+model WholesalePayment {
+  id            String            @id @default(uuid())
+  paymentNumber String            @unique
+  customerId    String
+  customer      WholesaleCustomer @relation(fields: [customerId], references: [id])
+  invoiceId     String?
+  invoice       WholesaleInvoice? @relation(fields: [invoiceId], references: [id])
+  amount        Float
+  paymentMethod String            @default("BANK_TRANSFER") // CASH, UPI, BANK_TRANSFER, CHEQUE, OTHER
+  referenceNo   String?
+  paymentDate   DateTime          @default(now())
+  notes         String?
+  createdAt     DateTime          @default(now())
+}
+
+model WholesaleLedger {
+  id              String            @id @default(uuid())
+  customerId      String
+  customer        WholesaleCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transactionType String            // INVOICE, PAYMENT, RETURN, ADJUSTMENT
+  invoiceId       String?
+  paymentId       String?
+  debit           Float             @default(0.0)
+  credit          Float             @default(0.0)
+  balance         Float
+  notes           String?
+  createdAt       DateTime          @default(now())
+}
+
+// ============================================================
+// CONSIGNMENT / BULK STOCK PLACEMENT MODELS
+// ============================================================
+
+model ConsignmentPartner {
+  id                  String   @id @default(uuid())
+  businessName        String
+  contactPerson       String?
+  mobile              String   @unique
+  whatsapp            String?
+  email               String?
+  address             String?
+  gstin               String?
+  agreementNumber     String?  @unique
+  commissionType      String   @default("PERCENTAGE") // PERCENTAGE, PER_GRAM, FIXED
+  commissionBasis     String   @default("TOTAL_SALES") // TOTAL_SALES, METAL_VALUE, MAKING_CHARGE, CUSTOM
+  commissionValue     Float    @default(0.0)
+  settlementFrequency String?  @default("Monthly")
+  terms               String?
+  notes               String?
+  status              String   @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  consignments     Consignment[]
+  consignmentStock ConsignmentStock[]
+  ledgers          ConsignmentStockLedger[]
+  settlements      ConsignmentSettlement[]
+}
+
+model Consignment {
+  id                     String             @id @default(uuid())
+  consignmentNumber      String             @unique
+  partnerId              String
+  partner                ConsignmentPartner @relation(fields: [partnerId], references: [id])
+  issueDate              DateTime           @default(now())
+  expectedSettlementDate DateTime?
+  status                 String             @default("ISSUED") // DRAFT, ISSUED, PARTIALLY_SETTLED, FULLY_SETTLED, RETURNED, CLOSED
+  
+  totalIssuedQuantity    Int                @default(0)
+  totalIssuedWeight      Float              @default(0.0)
+  totalSoldQuantity      Int                @default(0)
+  totalSoldWeight        Float              @default(0.0)
+  totalReturnedQuantity  Int                @default(0)
+  totalReturnedWeight    Float              @default(0.0)
+  balanceQuantity        Int                @default(0)
+  balanceWeight          Float              @default(0.0)
+  
+  totalIssuedValue       Float              @default(0.0)
+  notes                  String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  items        ConsignmentItem[]
+  settlements  ConsignmentSettlement[]
+}
+
+model ConsignmentItem {
+  id                String      @id @default(uuid())
+  consignmentId     String
+  consignment       Consignment @relation(fields: [consignmentId], references: [id], onDelete: Cascade)
+  productId         String
+  product           Product     @relation(fields: [productId], references: [id])
+  sku               String
+  name              String
+  grossWeight       Float
+  netWeight         Float
+  issuedQuantity    Int
+  issuedWeight      Float
+  soldQuantity      Int         @default(0)
+  soldWeight        Float       @default(0.0)
+  returnedQuantity  Int         @default(0)
+  returnedWeight    Float       @default(0.0)
+  balanceQuantity   Int
+  balanceWeight     Float
+  unitPrice         Float
+}
+
+model ConsignmentStock {
+  id          String             @id @default(uuid())
+  partnerId   String
+  partner     ConsignmentPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int                @default(0)
+  grossWeight Float              @default(0.0)
+  netWeight   Float              @default(0.0)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([partnerId, productId])
+}
+
+model ConsignmentStockLedger {
+  id              String             @id @default(uuid())
+  partnerId       String
+  partner         ConsignmentPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product            @relation(fields: [productId], references: [id])
+  transactionType String             // ISSUED, SOLD, RETURNED, DAMAGED, ADJUSTED, TRANSFERRED
+  quantity        Int
+  grossWeight     Float
+  netWeight       Float
+  referenceId     String?
+  date            DateTime           @default(now())
+  userId          String?
+  notes           String?
+}
+
+model ConsignmentSettlement {
+  id               String             @id @default(uuid())
+  settlementNumber String             @unique
+  consignmentId    String
+  consignment      Consignment        @relation(fields: [consignmentId], references: [id])
+  partnerId        String
+  partner          ConsignmentPartner @relation(fields: [partnerId], references: [id])
+  settlementDate   DateTime           @default(now())
+  
+  soldQuantity     Int
+  soldWeight       Float
+  returnedQuantity Int
+  returnedWeight   Float
+  
+  grossSalesValue  Float
+  commissionType   String             // PERCENTAGE, PER_GRAM, FIXED
+  commissionBasis  String             // TOTAL_SALES, METAL_VALUE, MAKING_CHARGE, CUSTOM
+  commissionValue  Float
+  commissionAmount Float
+  
+  netPayable       Float
+  amountPaid       Float              @default(0.0)
+  remainingBalance Float              @default(0.0)
+  paymentMethod    String?
+  referenceNo      String?
+  status           String             @default("COMPLETED")
+  notes            String?
+  createdAt        DateTime           @default(now())
 }
 

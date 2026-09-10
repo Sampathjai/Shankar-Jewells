@@ -33,11 +33,47 @@ export const AdminProductsPage: React.FC = () => {
   });
 
   const [categories, setCategories] = useState<any[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     loadProducts();
     loadCategories();
   }, [search]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      const data = new FormData();
+      data.append('image', file);
+
+      // Use fetch API directly for multipart formData
+      const rawToken = localStorage.getItem('token');
+      const headers: Record<string, string> = {};
+      if (rawToken && rawToken !== 'undefined' && rawToken !== 'null') {
+        headers['Authorization'] = `Bearer ${rawToken.replace(/"/g, '').trim()}`;
+      }
+
+      const res = await fetch('/api/upload/image', {
+        method: 'POST',
+        headers,
+        body: data,
+      });
+
+      const result = await res.json();
+      if (result.success && result.url) {
+        setFormData((prev) => ({ ...prev, imageUrl: result.url }));
+      } else {
+        alert(result.message || 'Image upload failed.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Image upload error.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   async function loadProducts() {
     try {
@@ -244,6 +280,26 @@ export const AdminProductsPage: React.FC = () => {
                   value={formData.stockQuantity}
                   onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
                   className="w-full p-2 border rounded"
+                />
+              </div>
+
+              <div className="col-span-2 space-y-1">
+                <label className="font-semibold block">Product Image *</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="text-xs text-gray-600 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-luxury-gold file:text-luxury-charcoal hover:file:bg-luxury-goldHover cursor-pointer"
+                  />
+                  {uploadingImage && <span className="text-xs text-luxury-gold font-bold">Uploading...</span>}
+                </div>
+                <input
+                  type="url"
+                  placeholder="Or enter Image URL (https://...)"
+                  value={formData.imageUrl}
+                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                  className="w-full p-2 border rounded text-xs font-mono"
                 />
               </div>
             </div>

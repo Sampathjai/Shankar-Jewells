@@ -27,6 +27,22 @@ import { AdminPOSBillingPage } from './pages/admin/AdminPOSBillingPage';
 import { AdminInvoicesPage } from './pages/admin/AdminInvoicesPage';
 import { AdminAuditLogsPage } from './pages/admin/AdminAuditLogsPage';
 
+// Wholesale Modules
+import { AdminWholesaleBillingPage } from './pages/admin/wholesale/AdminWholesaleBillingPage';
+import { AdminWholesaleCustomersPage } from './pages/admin/wholesale/AdminWholesaleCustomersPage';
+import { AdminWholesalePaymentsPage } from './pages/admin/wholesale/AdminWholesalePaymentsPage';
+import { AdminWholesaleReceivablesPage } from './pages/admin/wholesale/AdminWholesaleReceivablesPage';
+import { AdminWholesaleLedgerPage } from './pages/admin/wholesale/AdminWholesaleLedgerPage';
+
+// Consignment Modules
+import { AdminConsignmentPage } from './pages/admin/consignment/AdminConsignmentPage';
+import { AdminConsignmentPartnersPage } from './pages/admin/consignment/AdminConsignmentPartnersPage';
+import { AdminConsignmentIssuePage } from './pages/admin/consignment/AdminConsignmentIssuePage';
+import { AdminConsignmentSettlementPage } from './pages/admin/consignment/AdminConsignmentSettlementPage';
+
+// User Management Module
+import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+
 const CustomerLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col justify-between">
@@ -88,6 +104,23 @@ export const App: React.FC = () => {
           <Route path="/admin/billing" element={<AdminPOSBillingPage />} />
           <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
           <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
+
+          {/* Wholesale B2B Routes */}
+          <Route path="/admin/wholesale" element={<AdminWholesaleBillingPage />} />
+          <Route path="/admin/wholesale/customers" element={<AdminWholesaleCustomersPage />} />
+          <Route path="/admin/wholesale/payments" element={<AdminWholesalePaymentsPage />} />
+          <Route path="/admin/wholesale/receivables" element={<AdminWholesaleReceivablesPage />} />
+          <Route path="/admin/wholesale/ledger/:customerId" element={<AdminWholesaleLedgerPage />} />
+
+          {/* Consignment Bulk Stock Routes */}
+          <Route path="/admin/consignment" element={<AdminConsignmentPage />} />
+          <Route path="/admin/consignment/partners" element={<AdminConsignmentPartnersPage />} />
+          <Route path="/admin/consignment/issue" element={<AdminConsignmentIssuePage />} />
+          <Route path="/admin/consignment/settlements" element={<AdminConsignmentSettlementPage />} />
+          <Route path="/admin/consignment/stock" element={<AdminConsignmentPage />} />
+
+          {/* User Management Route */}
+          <Route path="/admin/users" element={<AdminUsersPage />} />
         </Route>
       </Routes>
     </Router>
@@ -95,4 +128,3 @@ export const App: React.FC = () => {
 };
 
 export default App;
-
