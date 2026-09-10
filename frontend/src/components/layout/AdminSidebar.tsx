@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import {
   LayoutDashboard,
   Package,
+  FolderTree,
   TrendingUp,
   Vault,
   ShoppingBag,
@@ -24,6 +25,7 @@ export const AdminSidebar: React.FC = () => {
     { label: 'Jewellery POS Billing', path: '/admin/billing', icon: Receipt, roles: ['SUPER_ADMIN', 'MANAGER', 'BILLING_STAFF'] },
     { label: 'Custom Requests', path: '/admin/custom-requests', icon: Sparkles, roles: ['SUPER_ADMIN', 'MANAGER', 'DESIGNER'] },
     { label: 'Product Catalogue', path: '/admin/products', icon: Package, roles: ['SUPER_ADMIN', 'MANAGER', 'INVENTORY_STAFF'] },
+    { label: 'Category Manager', path: '/admin/categories', icon: FolderTree, roles: ['SUPER_ADMIN', 'MANAGER', 'INVENTORY_STAFF'] },
     { label: 'Metal Rates Engine', path: '/admin/metal-rates', icon: TrendingUp, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { label: 'Vault Inventory', path: '/admin/inventory', icon: Vault, roles: ['SUPER_ADMIN', 'MANAGER', 'INVENTORY_STAFF'] },
     { label: 'Invoice History', path: '/admin/invoices', icon: FileSpreadsheet, roles: ['SUPER_ADMIN', 'MANAGER', 'BILLING_STAFF'] },
@@ -41,9 +43,9 @@ export const AdminSidebar: React.FC = () => {
             <Gem className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-serif text-lg font-bold text-white leading-none">ROYAL JEWELS</h2>
+            <h2 className="font-serif text-lg font-bold text-white leading-none">SHANKER JEWELLS</h2>
             <span className="text-[9px] tracking-widest text-luxury-gold uppercase font-semibold">
-              ERP & POS ATELIER
+              TRICHY • SINCE 2000
             </span>
           </div>
         </Link>

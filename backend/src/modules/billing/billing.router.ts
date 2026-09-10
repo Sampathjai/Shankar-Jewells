@@ -314,6 +314,117 @@ router.get(
   })
 );
 
+// GET /api/billing/customers/search (Search customer by mobile or name)
+router.get(
+  '/customers/search',
+  authenticate,
+  catchAsync(async (req: Request, res: Response) => {
+    const { q } = req.query;
+    if (!q || typeof q !== 'string' || q.trim().length === 0) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
+    const queryStr = q.trim();
+    const customers = await prisma.customer.findMany({
+      where: {
+        OR: [
+          { name: { contains: queryStr } },
+          { phone: { contains: queryStr } },
+          { email: { contains: queryStr } },
+        ],
+      },
+      include: {
+        invoices: { select: { id: true, invoiceNumber: true, grandTotal: true, createdAt: true } },
+      },
+      take: 10,
+    });
+
+    res.status(200).json({ success: true, data: customers });
+  })
+);
+
+// POST /api/billing/invoices/:id/cancel (Cancel Invoice & Restore Stock)
+router.post(
+  '/invoices/:id/cancel',
+  authenticate,
+  authorize('SUPER_ADMIN', 'MANAGER'),
+  catchAsync(async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+
+    const invoice = await prisma.invoice.findFirst({
+      where: { OR: [{ id }, { invoiceNumber: id }] },
+      include: { items: true },
+    });
+
+    if (!invoice) throw new AppError('Invoice not found.', 404);
+    if (invoice.status === 'CANCELLED') throw new AppError('Invoice is already cancelled.', 400);
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Mark Invoice as CANCELLED
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: { status: 'CANCELLED' },
+      });
+
+      if (invoice.orderId) {
+        await tx.order.update({
+          where: { id: invoice.orderId },
+          data: { status: 'CANCELLED', paymentStatus: 'REFUNDED' },
+        });
+      }
+
+      // 2. Restore Stock Quantity and record RETURN StockTransaction
+      for (const item of invoice.items) {
+        const prod = await tx.product.findUnique({ where: { id: item.productId } });
+        if (prod) {
+          const newQty = prod.stockQuantity + item.quantity;
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stockQuantity: newQty,
+              active: true,
+            },
+          });
+
+          await tx.stockTransaction.create({
+            data: {
+              productId: item.productId,
+              transactionType: 'RETURN',
+              quantity: item.quantity,
+              grossWeight: item.grossWeight,
+              netWeight: item.netWeight,
+              previousQuantity: prod.stockQuantity,
+              newQuantity: newQty,
+              previousWeight: prod.netWeight * prod.stockQuantity,
+              newWeight: prod.netWeight * newQty,
+              referenceType: 'INVOICE_CANCELLATION',
+              referenceId: invoice.invoiceNumber,
+              userId: req.user?.id,
+              notes: `Stock restored from cancelled Invoice ${invoice.invoiceNumber}`,
+            },
+          });
+        }
+      }
+    });
+
+    await recordAuditLog({
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      action: 'CANCEL_INVOICE',
+      entity: 'Invoice',
+      entityId: invoice.id,
+      oldValue: { status: invoice.status },
+      newValue: { status: 'CANCELLED' },
+      ipAddress: req.ip,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Invoice ${invoice.invoiceNumber} cancelled and stock restored successfully.`,
+    });
+  })
+);
+
 // GET /api/orders (List all orders)
 router.get(
   '/orders',

@@ -41,15 +41,17 @@ export const ProductDetailPage: React.FC = () => {
   const pricing = product.calculatedPricing;
   const finalPrice = product.displayPrice || product.sellingPrice;
   const wishlisted = isInWishlist(product.id);
+  const isOutOfStock = product.stockQuantity === 0;
 
   const handleWhatsAppEnquiry = () => {
     const text = encodeURIComponent(
-      `Hi Royal Jewels, I am interested in ${product.name} (SKU: ${product.sku}, Price: ₹${finalPrice.toLocaleString('en-IN')}). Could you please share more details? Link: ${window.location.href}`
+      `Hi Shanker Jewells, I am interested in ${product.name} (SKU: ${product.sku}, Price: ₹${finalPrice.toLocaleString('en-IN')}). Could you please share more details? Link: ${window.location.href}`
     );
-    window.open(`https://wa.me/919876543210?text=${text}`, '_blank');
+    window.open(`https://wa.me/919443949192?text=${text}`, '_blank');
   };
 
   const handleBuyNow = () => {
+    if (isOutOfStock) return;
     addItem(product, 1);
     navigate('/checkout');
   };
@@ -64,7 +66,15 @@ export const ProductDetailPage: React.FC = () => {
               src={product.images[selectedImg]?.url || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800'}
               alt={product.name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800';
+              }}
             />
+            {isOutOfStock && (
+              <span className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-lg">
+                OUT OF STOCK
+              </span>
+            )}
             <button
               onClick={() => toggleWishlist(product)}
               className="absolute top-4 right-4 p-3 rounded-full bg-white/80 backdrop-blur-xs text-luxury-charcoal hover:text-red-500 shadow-md"
@@ -84,7 +94,14 @@ export const ProductDetailPage: React.FC = () => {
                     selectedImg === idx ? 'border-luxury-gold shadow-md' : 'border-transparent opacity-60'
                   }`}
                 >
-                  <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={img.url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800';
+                    }}
+                  />
                 </button>
               ))}
             </div>
@@ -168,16 +185,32 @@ export const ProductDetailPage: React.FC = () => {
 
           {/* CTAs */}
           <div className="space-y-3 pt-2">
+            {isOutOfStock ? (
+              <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-xs rounded-xl text-center">
+                This item is currently out of stock. Contact us on WhatsApp for custom re-order.
+              </div>
+            ) : null}
+
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => addItem(product, 1)}
-                className="flex-1 py-3.5 rounded-full bg-luxury-gold text-white font-semibold text-xs tracking-widest uppercase hover:bg-luxury-gold-dark transition-all flex items-center justify-center gap-2 shadow-luxury"
+                onClick={() => !isOutOfStock && addItem(product, 1)}
+                disabled={isOutOfStock}
+                className={`flex-1 py-3.5 rounded-full font-semibold text-xs tracking-widest uppercase transition-all flex items-center justify-center gap-2 ${
+                  isOutOfStock
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-luxury-gold text-white hover:bg-luxury-gold-dark shadow-luxury'
+                }`}
               >
-                <ShoppingBag className="w-4 h-4" /> Add To Bag
+                <ShoppingBag className="w-4 h-4" /> {isOutOfStock ? 'OUT OF STOCK' : 'Add To Bag'}
               </button>
               <button
                 onClick={handleBuyNow}
-                className="flex-1 py-3.5 rounded-full bg-luxury-charcoal text-white font-semibold text-xs tracking-widest uppercase hover:bg-black transition-all flex items-center justify-center gap-2"
+                disabled={isOutOfStock}
+                className={`flex-1 py-3.5 rounded-full font-semibold text-xs tracking-widest uppercase transition-all flex items-center justify-center gap-2 ${
+                  isOutOfStock
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-luxury-charcoal text-white hover:bg-black'
+                }`}
               >
                 Buy Now
               </button>

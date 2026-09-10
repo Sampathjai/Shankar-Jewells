@@ -19,6 +19,7 @@ import { AccountPage } from './pages/customer/AccountPage';
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminProductsPage } from './pages/admin/AdminProductsPage';
+import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage';
 import { AdminMetalRatesPage } from './pages/admin/AdminMetalRatesPage';
 import { AdminInventoryPage } from './pages/admin/AdminInventoryPage';
 import { AdminCustomRequestsPage } from './pages/admin/AdminCustomRequestsPage';
@@ -58,6 +59,10 @@ export const App: React.FC = () => {
         <Route element={<CustomerLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/shop" element={<ShopPage />} />
+          <Route path="/gold" element={<ShopPage />} />
+          <Route path="/gold-jewellery" element={<ShopPage />} />
+          <Route path="/silver" element={<ShopPage />} />
+          <Route path="/silver-jewellery" element={<ShopPage />} />
           <Route path="/product/:slug" element={<ProductDetailPage />} />
           <Route path="/custom-jewellery" element={<CustomJewelleryPage />} />
           <Route path="/gold-silver-rate" element={<GoldRatePage />} />
@@ -76,6 +81,7 @@ export const App: React.FC = () => {
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/products" element={<AdminProductsPage />} />
+          <Route path="/admin/categories" element={<AdminCategoriesPage />} />
           <Route path="/admin/metal-rates" element={<AdminMetalRatesPage />} />
           <Route path="/admin/inventory" element={<AdminInventoryPage />} />
           <Route path="/admin/custom-requests" element={<AdminCustomRequestsPage />} />

@@ -129,6 +129,7 @@ export const ShopPage: React.FC = () => {
           {products.map((product) => {
             const displayPrice = product.displayPrice || product.sellingPrice;
             const wishlisted = isInWishlist(product.id);
+            const isOutOfStock = product.stockQuantity === 0;
 
             return (
               <div
@@ -149,12 +150,19 @@ export const ShopPage: React.FC = () => {
                     src={product.images[0]?.url || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600'}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600';
+                    }}
                   />
-                  {product.hallmark && (
+                  {isOutOfStock ? (
+                    <span className="absolute top-3 left-3 px-2.5 py-1 rounded bg-rose-600 text-white text-[9px] font-bold uppercase tracking-wider shadow">
+                      OUT OF STOCK
+                    </span>
+                  ) : product.hallmark ? (
                     <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-luxury-charcoal/80 text-[9px] text-luxury-gold font-semibold uppercase flex items-center gap-1 backdrop-blur-xs">
                       <ShieldCheck className="w-3 h-3" /> BIS Hallmarked
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Product Details */}
@@ -187,9 +195,14 @@ export const ShopPage: React.FC = () => {
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => addItem(product)}
-                        className="p-2 rounded-full bg-luxury-gold text-white hover:bg-luxury-gold-dark transition-colors"
-                        title="Add To Bag"
+                        onClick={() => !isOutOfStock && addItem(product)}
+                        disabled={isOutOfStock}
+                        className={`p-2 rounded-full transition-colors ${
+                          isOutOfStock
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-luxury-gold text-white hover:bg-luxury-gold-dark'
+                        }`}
+                        title={isOutOfStock ? 'Out of Stock' : 'Add To Bag'}
                       >
                         <ShoppingBag className="w-4 h-4" />
                       </button>

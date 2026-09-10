@@ -62,6 +62,12 @@ export interface Product {
   featured: boolean;
   newArrival: boolean;
   bestSeller: boolean;
+  active?: boolean;
+  category?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
   images: ProductImage[];
   calculatedPricing?: {
     metalRate: number;

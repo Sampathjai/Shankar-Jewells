@@ -2,11 +2,12 @@ import { Router, Request, Response } from 'express';
 import prisma from '../../config/db.js';
 import { catchAsync, AppError } from '../../utils/errors.js';
 import { authenticate, authorize, AuthenticatedRequest } from '../../middleware/auth.js';
+import { PricingService } from '../pricing/pricing.service.js';
 import { recordAuditLog } from '../../middleware/audit.js';
 
 const router = Router();
 
-// GET /api/inventory (List stock with weights & low stock alerts)
+// GET /api/inventory (List stock with weights, valuations & alerts)
 router.get(
   '/',
   authenticate,
@@ -14,32 +15,82 @@ router.get(
   catchAsync(async (req: AuthenticatedRequest, res: Response) => {
     const products = await prisma.product.findMany({
       include: {
-        category: { select: { name: true } },
-        images: { where: { isPrimary: true } },
+        category: { select: { id: true, name: true, slug: true } },
+        subcategory: { select: { id: true, name: true, slug: true } },
+        images: true,
       },
-      orderBy: { stockQuantity: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
 
-    const stockSummary = products.reduce(
-      (acc, p) => {
-        acc.totalUnits += p.stockQuantity;
-        acc.totalGrossWeight += p.grossWeight * p.stockQuantity;
-        acc.totalNetWeight += p.netWeight * p.stockQuantity;
-        if (p.stockQuantity <= p.lowStockThreshold) acc.lowStockCount += 1;
-        return acc;
-      },
-      { totalUnits: 0, totalGrossWeight: 0, totalNetWeight: 0, lowStockCount: 0 }
+    let totalUnits = 0;
+    let totalGrossWeight = 0;
+    let totalNetWeight = 0;
+    let goldStockValue = 0;
+    let silverStockValue = 0;
+    let lowStockCount = 0;
+    let outOfStockCount = 0;
+
+    const enrichedProducts = await Promise.all(
+      products.map(async (p) => {
+        totalUnits += p.stockQuantity;
+        totalGrossWeight += p.grossWeight * p.stockQuantity;
+        totalNetWeight += p.netWeight * p.stockQuantity;
+
+        if (p.stockQuantity === 0) {
+          outOfStockCount += 1;
+        } else if (p.stockQuantity <= p.lowStockThreshold) {
+          lowStockCount += 1;
+        }
+
+        let calculatedPricing = null;
+        if (p.pricingMode === 'METAL_RATE_BASED') {
+          calculatedPricing = await PricingService.calculateItemPrice({
+            metalType: p.metalType,
+            purity: p.purity,
+            grossWeight: p.grossWeight,
+            netWeight: p.netWeight,
+            makingChargeType: p.makingChargeType,
+            makingChargeValue: p.makingChargeValue,
+            wastageType: p.wastageType,
+            wastageValue: p.wastageValue,
+            stoneCharge: p.stoneCharge,
+            otherCharges: p.otherCharges,
+            gstRate: p.gstRate,
+          });
+        }
+
+        const estPrice = calculatedPricing ? calculatedPricing.finalPrice : p.sellingPrice;
+        const totalVal = estPrice * p.stockQuantity;
+
+        if (p.metalType === 'GOLD') {
+          goldStockValue += totalVal;
+        } else {
+          silverStockValue += totalVal;
+        }
+
+        return {
+          ...p,
+          calculatedPricing,
+          displayPrice: estPrice,
+          totalInventoryValue: totalVal,
+        };
+      })
     );
 
     res.status(200).json({
       success: true,
       summary: {
-        totalUnits: stockSummary.totalUnits,
-        totalGrossWeight: Math.round(stockSummary.totalGrossWeight * 100) / 100,
-        totalNetWeight: Math.round(stockSummary.totalNetWeight * 100) / 100,
-        lowStockCount: stockSummary.lowStockCount,
+        totalProducts: products.length,
+        totalUnits,
+        totalGrossWeight: Math.round(totalGrossWeight * 100) / 100,
+        totalNetWeight: Math.round(totalNetWeight * 100) / 100,
+        goldStockValue: Math.round(goldStockValue),
+        silverStockValue: Math.round(silverStockValue),
+        totalInventoryValue: Math.round(goldStockValue + silverStockValue),
+        lowStockCount,
+        outOfStockCount,
       },
-      data: products,
+      data: enrichedProducts,
     });
   })
 );
